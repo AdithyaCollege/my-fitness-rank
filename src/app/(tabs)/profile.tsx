@@ -66,6 +66,8 @@ function calculateAge(dob: string | null | undefined): string {
   return age > 0 && age < 150 ? `${age}` : 'N/A';
 }
 
+const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
+
 // ═════════════════════════════════════════════════════════════════════════
 export default function ProfileScreen() {
   const router = useRouter();
@@ -79,6 +81,7 @@ export default function ProfileScreen() {
   const [editVisible, setEditVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState({
+    username: '',
     display_name: '',
     gender: '',
     date_of_birth: '',
@@ -154,6 +157,7 @@ export default function ProfileScreen() {
   const openEditModal = () => {
     if (profile) {
       setEditForm({
+        username: profile.username || '',
         display_name: profile.display_name || '',
         gender: profile.gender || '',
         date_of_birth: profile.date_of_birth || '',
@@ -167,11 +171,52 @@ export default function ProfileScreen() {
     setEditVisible(true);
   };
 
+  const getUsernameChangesRemaining = () => {
+    if (!profile) return 2;
+    const changes = profile.username_changes_this_month || 0;
+    const lastChangeStr = profile.last_username_change_at;
+    if (!lastChangeStr) return 2;
+    
+    const lastChange = new Date(lastChangeStr);
+    const now = new Date();
+    const isDifferentMonth =
+      lastChange.getUTCFullYear() !== now.getUTCFullYear() ||
+      lastChange.getUTCMonth() !== now.getUTCMonth();
+      
+    if (isDifferentMonth) {
+      return 2;
+    }
+    return Math.max(0, 2 - changes);
+  };
+
   const saveProfile = async () => {
     if (!profile) return;
     setSaving(true);
     try {
+      const usernameTrimmed = editForm.username.trim();
+      const isUsernameChanging = usernameTrimmed !== (profile.username || '');
+
+      if (isUsernameChanging) {
+        if (usernameTrimmed.length < 3 || usernameTrimmed.length > 15) {
+          throw new Error('Gamertag must be between 3 and 15 characters.');
+        }
+        if (!USERNAME_REGEX.test(usernameTrimmed)) {
+          throw new Error('Gamertag can only contain letters, numbers, and underscores.');
+        }
+        
+        // Check availability
+        const { data: isAvailable, error: checkError } = await supabase.rpc('check_username_available', {
+          requested_username: usernameTrimmed,
+        });
+        if (checkError) {
+          console.error('Error checking username availability:', checkError);
+        } else if (!isAvailable) {
+          throw new Error('This gamertag is already taken.');
+        }
+      }
+
       const updates: Record<string, any> = {
+        username: usernameTrimmed || null,
         display_name: editForm.display_name.trim() || null,
         gender: editForm.gender || null,
         date_of_birth: editForm.date_of_birth.trim() || null,
@@ -182,14 +227,16 @@ export default function ProfileScreen() {
         bio: editForm.bio.trim() || null,
       };
 
-      const { error } = await supabase
+      const { data: updatedProfile, error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('id', profile.id);
+        .eq('id', profile.id)
+        .select()
+        .single();
 
       if (error) throw error;
 
-      setProfile({ ...profile, ...updates });
+      setProfile(updatedProfile);
       setEditVisible(false);
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to save profile.');
@@ -684,17 +731,42 @@ export default function ProfileScreen() {
             contentContainerStyle={styles.modalScrollContent}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Username (read-only) */}
+            {/* Username (Gamertag) */}
             <View style={styles.editFieldContainer}>
               <Text style={styles.editFieldLabel}>Gamertag</Text>
-              <View style={styles.readOnlyField}>
-                <Text style={styles.readOnlyText}>
-                  {profile?.username ?? '—'}
-                </Text>
-              </View>
-              <Text style={styles.readOnlyHint}>
-                Gamertag cannot be changed
-              </Text>
+              {(() => {
+                const changesRemaining = getUsernameChangesRemaining();
+                const isLocked = changesRemaining <= 0;
+                return (
+                  <>
+                    <TextInput
+                      style={[
+                        styles.editInput,
+                        isLocked && { backgroundColor: Theme.colors.cardSecondary, color: Theme.colors.textMuted }
+                      ]}
+                      value={editForm.username}
+                      onChangeText={(t) => {
+                        setEditForm((f) => ({ ...f, username: t.toLowerCase().replace(/[^a-z0-9_]/g, '') }));
+                      }}
+                      placeholder="Choose a unique username"
+                      placeholderTextColor={Theme.colors.textMuted + '80'}
+                      maxLength={15}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      editable={!isLocked}
+                    />
+                    {isLocked ? (
+                      <Text style={[styles.readOnlyHint, { color: Theme.colors.danger }]}>
+                        You have changed your gamertag 2 times this month. Changes are locked until next month.
+                      </Text>
+                    ) : (
+                      <Text style={styles.readOnlyHint}>
+                        Changes remaining this month: {changesRemaining}. Gamertag must be 3-15 chars, unique.
+                      </Text>
+                    )}
+                  </>
+                );
+              })()}
             </View>
 
             {/* Display Name */}

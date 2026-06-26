@@ -1,8 +1,12 @@
+import 'react-native-url-polyfill/auto';
+import 'react-native-get-random-values';
 import { DarkTheme, DefaultTheme, ThemeProvider, Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, View, useColorScheme, LogBox } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
+
+LogBox.ignoreLogs(['WebCrypto API is not supported']);
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -134,10 +138,11 @@ export default function RootLayout() {
 
     const inAuthGroup = segments[0] === '(auth)';
     const inOnboarding = segments[0] === 'onboarding';
+    const inAuthCallback = segments[0] === 'auth-callback';
 
     if (!session) {
       // Not logged in -> Redirect to login if not already there
-      if (!inAuthGroup) {
+      if (!inAuthGroup && !inAuthCallback) {
         router.replace('/(auth)/login');
       }
     } else {
@@ -145,11 +150,31 @@ export default function RootLayout() {
       if (!onboarded) {
         // Not onboarded -> Redirect to onboarding if not already there
         if (!inOnboarding) {
-          router.replace('/onboarding');
+          // Double check database first to resolve onboarding state sync race conditions
+          console.log('[RootLayout] Redirect check: User is not onboarded locally. Checking database...');
+          (async () => {
+            try {
+              const { data } = await supabase
+                .from('profiles')
+                .select('onboarded')
+                .eq('id', session.user.id)
+                .single();
+              if (data?.onboarded) {
+                console.log('[RootLayout] Database check found onboarded=true! Syncing local state.');
+                setOnboarded(true);
+              } else {
+                console.log('[RootLayout] Database check confirmed onboarded=false. Redirecting to onboarding.');
+                router.replace('/onboarding');
+              }
+            } catch (err: any) {
+              console.error('[RootLayout] Error double checking onboarding, falling back to redirect:', err);
+              router.replace('/onboarding');
+            }
+          })();
         }
       } else {
-        // Logged in & Onboarded -> Redirect to main app if in auth or onboarding
-        if (inAuthGroup || inOnboarding || (segments as string[]).length === 0) {
+        // Logged in & Onboarded -> Redirect to main app if in auth, onboarding, or auth-callback
+        if (inAuthGroup || inOnboarding || inAuthCallback || (segments as string[]).length === 0) {
           router.replace('/(tabs)');
         }
       }

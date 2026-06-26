@@ -21,96 +21,21 @@ const { width } = Dimensions.get('window');
 export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const isProcessingRef = useRef(false);
 
-  const extractAndSetSession = async (url: string) => {
-    // Prevent double-processing
-    if (isProcessingRef.current) return;
-    isProcessingRef.current = true;
-
-    try {
-      // Extract tokens from URL hash fragments or query params
-      const getParam = (name: string, urlStr: string): string => {
-        // Check hash fragments first (#access_token=...)
-        const hashRegex = new RegExp('[#&]' + name + '=([^&#]*)');
-        const hashResult = hashRegex.exec(urlStr);
-        if (hashResult) return decodeURIComponent(hashResult[1].replace(/\+/g, ' '));
-
-        // Check query params (?access_token=...)
-        const queryRegex = new RegExp('[?&]' + name + '=([^&#]*)');
-        const queryResult = queryRegex.exec(urlStr);
-        if (queryResult) return decodeURIComponent(queryResult[1].replace(/\+/g, ' '));
-
-        return '';
-      };
-
-      const accessToken = getParam('access_token', url);
-      const refreshToken = getParam('refresh_token', url);
-
-      if (accessToken && refreshToken) {
-        const { error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-        if (error) throw error;
-        console.log('Session set successfully!');
-        return;
-      }
-
-      // Try authorization code exchange (PKCE flow)
-      const code = getParam('code', url);
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) throw error;
-        console.log('Code exchanged for session successfully!');
-        return;
-      }
-
-      // Check for errors from OAuth
-      const errorParam = getParam('error', url);
-      const errorDesc = getParam('error_description', url);
-      if (errorParam) {
-        throw new Error(errorDesc || errorParam);
-      }
-
-      console.warn('No tokens or code found in callback URL:', url);
-    } catch (err: any) {
-      console.error('Session extraction error:', err);
-      setErrorMsg(err.message || 'Failed to complete sign-in.');
-    } finally {
-      isProcessingRef.current = false;
-      setLoading(false);
-    }
-  };
-
-  // Listen for deep links at all times (this catches the redirect on Android)
   useEffect(() => {
-    const subscription = Linking.addEventListener('url', (event) => {
-      console.log('Deep link received:', event.url);
-      if (
-        event.url.includes('access_token') ||
-        event.url.includes('code=') ||
-        event.url.includes('error=')
-      ) {
-        extractAndSetSession(event.url);
+    if (Platform.OS === 'android') {
+      WebBrowser.warmUpAsync();
+    }
+    return () => {
+      if (Platform.OS === 'android') {
+        WebBrowser.coolDownAsync();
       }
-    });
-
-    // Also check if the app was opened from a deep link (cold start)
-    Linking.getInitialURL().then((url) => {
-      if (url && (url.includes('access_token') || url.includes('code='))) {
-        console.log('Initial deep link:', url);
-        extractAndSetSession(url);
-      }
-    });
-
-    return () => subscription.remove();
+    };
   }, []);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
     setErrorMsg(null);
-    isProcessingRef.current = false;
 
     try {
       // Use Linking.createURL to get the Expo Go redirect URI
@@ -122,37 +47,24 @@ export default function LoginScreen() {
         options: {
           redirectTo,
           skipBrowserRedirect: true,
+          queryParams: {
+            prompt: 'select_account',
+          },
         },
       });
 
       if (error) throw error;
       if (!data?.url) throw new Error('No auth URL returned from Supabase.');
 
-      // Try openAuthSessionAsync first (works on iOS, may work on some Android)
-      const result = await WebBrowser.openAuthSessionAsync(
+      // Open the browser session
+      await WebBrowser.openAuthSessionAsync(
         data.url,
         redirectTo
       );
-
-      console.log('Auth session result:', result.type);
-
-      if (result.type === 'success' && result.url) {
-        // Chrome Custom Tab successfully caught the redirect
-        await extractAndSetSession(result.url);
-      } else if (result.type === 'cancel' || result.type === 'dismiss') {
-        // On Android, the browser may have dismissed but the deep link
-        // was caught by the Linking.addEventListener above.
-        // Give it a moment to process.
-        setTimeout(() => {
-          if (!isProcessingRef.current) {
-            // If no deep link was received either, user probably cancelled
-            setLoading(false);
-          }
-        }, 3000);
-      }
     } catch (err: any) {
       console.error('Google Sign In Error:', err);
       setErrorMsg(err.message || 'Failed to complete Google Sign In.');
+    } finally {
       setLoading(false);
     }
   };

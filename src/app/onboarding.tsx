@@ -301,7 +301,7 @@ export default function OnboardingScreen() {
         <Text style={styles.sectionTitle}>GAMERTAG</Text>
         <View style={styles.inputRow}>
           <TextInput
-            style={styles.inputFull}
+            style={styles.inputFlat}
             placeholder="Choose a unique username"
             placeholderTextColor={Theme.colors.textMuted}
             value={username}
@@ -775,6 +775,14 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 15,
     fontWeight: '600',
+  },
+  inputFlat: {
+    flex: 1,
+    height: '100%',
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '600',
+    paddingHorizontal: 0,
   },
   inputRow: {
     flexDirection: 'row',
