@@ -11,6 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Theme, getRankDetails } from '@/theme/theme';
 import { Trophy, Medal, Flame } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 
 export default function LeaderboardScreen() {
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
@@ -70,9 +72,14 @@ export default function LeaderboardScreen() {
       <View
         style={[
           styles.row,
-          isCurrentUser && [styles.currentUserRow, Theme.getGlow(Theme.colors.primary, 'low')],
+          isCurrentUser && styles.currentUserRow,
+          isCurrentUser && Theme.getGlow(Theme.colors.primary, 'low'),
         ]}
       >
+        <LinearGradient
+          colors={['rgba(255, 255, 255, 0.07)', 'rgba(255, 255, 255, 0.01)']}
+          style={StyleSheet.absoluteFill}
+        />
         {/* Rank Number / Badge */}
         <View style={styles.rankCol}>
           {rankBadge ? (
@@ -118,29 +125,43 @@ export default function LeaderboardScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <Trophy size={24} color={Theme.colors.primary} />
-        <Text style={styles.headerTitle}>GLOBAL RANKINGS</Text>
-      </View>
-
-      <FlatList
-        data={leaderboard}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Theme.colors.primary} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Trophy size={36} color={Theme.colors.textMuted} style={{ opacity: 0.5 }} />
-            <Text style={styles.emptyText}>No users on the leaderboard.</Text>
-            <Text style={styles.emptySubtext}>Be the first to log a workout and claim #1!</Text>
-          </View>
-        }
+    <LinearGradient
+      colors={['#06060C', '#120A2B', '#1C123E']}
+      style={{ flex: 1 }}
+    >
+      <LinearGradient
+        colors={['rgba(124, 58, 237, 0.78)', 'rgba(124, 58, 237, 0)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.6, y: 0.6 }}
+        style={styles.ambientGlowTop}
       />
-    </SafeAreaView>
+      <View style={styles.ambientGlowBottom} />
+
+      <SafeAreaView style={styles.safeArea}>
+
+        <View style={styles.header}>
+          <Trophy size={20} color={Theme.colors.primary} />
+          <Text style={styles.headerTitle}>GLOBAL RANKINGS</Text>
+        </View>
+
+        <FlatList
+          data={leaderboard}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Theme.colors.primary} />
+          }
+          ListEmptyComponent={
+            <BlurView intensity={25} tint="dark" style={styles.emptyContainer}>
+              <Trophy size={36} color={Theme.colors.textMuted} style={{ opacity: 0.5 }} />
+              <Text style={styles.emptyText}>No users on the leaderboard.</Text>
+              <Text style={styles.emptySubtext}>Be the first to log a workout and claim #1!</Text>
+            </BlurView>
+          }
+        />
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
@@ -153,21 +174,36 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    backgroundColor: Theme.colors.background,
+    backgroundColor: 'transparent',
+  },
+  ambientGlowTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: 400,
+  },
+  ambientGlowBottom: {
+    position: 'absolute',
+    bottom: -150,
+    left: -150,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: Theme.colors.accent,
+    opacity: 0.05,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderColor: Theme.colors.border,
     gap: 10,
   },
   headerTitle: {
     color: '#FFF',
     fontSize: 16,
-    fontWeight: '900',
+    fontFamily: 'Inter_900Black',
     letterSpacing: 1.5,
   },
   listContainer: {
@@ -178,17 +214,19 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.5)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     paddingVertical: 12,
     paddingHorizontal: 16,
     gap: 12,
+    overflow: 'hidden',
+    position: 'relative',
   },
   currentUserRow: {
     borderColor: Theme.colors.primary,
-    backgroundColor: '#0F251E', // Very dark green tint
+    backgroundColor: 'rgba(124, 58, 237, 0.15)',
   },
   rankCol: {
     width: 30,
@@ -198,7 +236,7 @@ const styles = StyleSheet.create({
   rankNumText: {
     color: Theme.colors.textMuted,
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
   },
   userCol: {
     flex: 1,
@@ -207,8 +245,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   avatarEmoji: {
-    fontSize: 26,
-    backgroundColor: Theme.colors.background,
+    fontSize: 24,
+    backgroundColor: 'transparent',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -220,11 +258,11 @@ const styles = StyleSheet.create({
   username: {
     color: '#FFF',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   rankTier: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginTop: 1,
   },
   statsCol: {
@@ -234,7 +272,7 @@ const styles = StyleSheet.create({
   streakBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Theme.colors.background,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -245,35 +283,37 @@ const styles = StyleSheet.create({
   streakText: {
     color: '#FFF',
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   xpText: {
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
   },
   xpSubText: {
     fontSize: 10,
     color: Theme.colors.textMuted,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   emptyContainer: {
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.4)',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     padding: 40,
     alignItems: 'center',
     gap: 8,
     marginTop: 20,
+    overflow: 'hidden',
   },
   emptyText: {
     color: '#FFF',
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   emptySubtext: {
     color: Theme.colors.textMuted,
     fontSize: 12,
+    fontFamily: 'Inter_400Regular',
     textAlign: 'center',
   },
 });

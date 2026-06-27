@@ -1,19 +1,23 @@
 export const Theme = {
   colors: {
-    background: '#0A0E17',      // Pitch black / deep slate base
-    card: '#121824',            // Card panel background
-    cardSecondary: '#1C2434',   // Highlighted list items
-    border: '#1F2C47',          // Subdued borders
+    background: '#06060C',      // Deep space black base
+    card: '#0E091B',            // Dark purple-tinted glass card background
+    cardSecondary: '#160F2B',   // Elevated purple-tinted glass
+    border: '#22163B',          // Subdued purple border
     text: '#FFFFFF',            // Main text color
-    textMuted: '#8E9AA8',       // Secondary description text
+    textMuted: '#8A82A0',       // Muted slate-purple description text
     
-    // Neon Esports Accents
-    primary: '#00FF66',         // Neon Green
-    secondary: '#00F0FF',       // Neon Cyan
-    accent: '#B026FF',          // Neon Purple
-    danger: '#FF0055',          // Neon Crimson/Pink
-    warning: '#FFB300',         // Neon Gold/Yellow
-    success: '#00FF66',
+    // Premium Purple accents
+    primary: '#7C3AED',         // Rich Purple
+    secondary: '#00F0FF',       // Neon Cyan (details/accents)
+    accent: '#A78BFA',          // Light Purple Highlight
+    danger: '#FF2A5F',          // Neon Crimson/Pink
+    warning: '#F59E0B',         // Warm Amber/Gold
+    success: '#10B981',         // Emerald Green
+  },
+  gradients: {
+    primary: ['#7C3AED', '#9333EA'] as [string, string],
+    primaryFade: ['rgba(124, 58, 237, 0.15)', 'rgba(147, 51, 234, 0.05)'] as [string, string],
   },
   
   // Rank specific colors & glow configurations
@@ -62,7 +66,6 @@ export const Theme = {
     },
   },
   
-  // Helper to generate React Native shadow style for glowing elements
   getGlow: (color: string, intensity: 'low' | 'medium' | 'high' = 'medium') => {
     const opacity = intensity === 'low' ? 0.3 : intensity === 'medium' ? 0.6 : 0.9;
     const radius = intensity === 'low' ? 4 : intensity === 'medium' ? 8 : 16;
@@ -71,7 +74,6 @@ export const Theme = {
       shadowOffset: { width: 0, height: 0 },
       shadowOpacity: opacity,
       shadowRadius: radius,
-      elevation: intensity === 'low' ? 3 : intensity === 'medium' ? 6 : 12, // for Android
     };
   },
 };

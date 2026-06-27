@@ -18,6 +18,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Theme, getRankDetails } from '@/theme/theme';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import {
   Flame,
   Dumbbell,
@@ -422,6 +424,7 @@ export default function ProfileScreen() {
     <View style={styles.headerContainer}>
       {/* ─── Section 1: Profile Hero Card ─── */}
       <View style={styles.profileCard}>
+        <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
         <View style={[styles.avatarCircle, Theme.getGlow(rank.color, 'low')]}>
           <Text style={styles.avatarEmoji}>{avatarEmoji}</Text>
         </View>
@@ -467,6 +470,7 @@ export default function ProfileScreen() {
           activeOpacity={0.7}
           onPress={() => openSingleEdit('height')}
         >
+          <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
           <Ruler size={14} color={Theme.colors.secondary} />
           <Text style={styles.physicalValue}>
             {profile?.height_cm ? `${profile.height_cm} cm` : 'N/A'}
@@ -479,6 +483,7 @@ export default function ProfileScreen() {
           activeOpacity={0.7}
           onPress={() => openSingleEdit('weight')}
         >
+          <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
           <Weight size={14} color={Theme.colors.warning} />
           <Text style={styles.physicalValue}>
             {profile?.weight_kg ? `${profile.weight_kg} kg` : 'N/A'}
@@ -491,6 +496,7 @@ export default function ProfileScreen() {
           activeOpacity={0.7}
           onPress={() => openSingleEdit('age')}
         >
+          <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
           <User size={14} color={Theme.colors.accent} />
           <Text style={styles.physicalValue}>
             {calculateAge(profile?.date_of_birth)}
@@ -503,6 +509,7 @@ export default function ProfileScreen() {
           activeOpacity={0.7}
           onPress={() => openSingleEdit('gender')}
         >
+          <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
           <Text style={styles.genderEmoji}>
             {GENDER_EMOJIS[profile?.gender] || '—'}
           </Text>
@@ -517,6 +524,7 @@ export default function ProfileScreen() {
       <View style={styles.fitnessInfoRow}>
         {profile?.fitness_goal ? (
           <View style={styles.fitnessPill}>
+            <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
             <Text style={styles.fitnessPillText}>
               {GOAL_EMOJIS[profile.fitness_goal] || '🎯'} {profile.fitness_goal}
             </Text>
@@ -525,6 +533,7 @@ export default function ProfileScreen() {
 
         {profile?.experience_level ? (
           <View style={styles.fitnessPill}>
+            <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
             <Text style={styles.fitnessPillText}>
               {LEVEL_EMOJIS[profile.experience_level] || '🏅'}{' '}
               {profile.experience_level}
@@ -536,12 +545,14 @@ export default function ProfileScreen() {
       {/* ─── Section 4: Game Stats Grid ─── */}
       <View style={styles.statsGrid}>
         <View style={styles.statBox}>
+          <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
           <Trophy size={20} color={Theme.colors.warning} />
           <Text style={styles.statValue}>{profile?.total_xp ?? 0}</Text>
           <Text style={styles.statLabel}>Lifetime XP</Text>
         </View>
 
         <View style={styles.statBox}>
+          <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
           <Flame size={20} color={Theme.colors.primary} />
           <Text style={styles.statValue}>
             {profile?.current_streak ?? 0}d
@@ -550,6 +561,7 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.statBox}>
+          <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
           <Calendar size={20} color={Theme.colors.secondary} />
           <Text style={styles.statValue}>
             {profile?.longest_streak ?? 0}d
@@ -558,6 +570,7 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.statBox}>
+          <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
           <Dumbbell size={20} color={Theme.colors.accent} />
           <Text style={styles.statValue}>{workouts.length}</Text>
           <Text style={styles.statLabel}>Total Workouts</Text>
@@ -597,6 +610,10 @@ export default function ProfileScreen() {
   // ── Workout Item ────────────────────────────────────────────────────
   const renderWorkoutItem = ({ item }: { item: any }) => (
     <View style={styles.workoutCard}>
+      <LinearGradient
+        colors={['rgba(255, 255, 255, 0.07)', 'rgba(255, 255, 255, 0.01)']}
+        style={StyleSheet.absoluteFill}
+      />
       <View style={styles.workoutRow}>
         <View style={[styles.workoutMeta, { alignItems: 'flex-start', flex: 1 }]}>
           <View style={{ flex: 1 }}>
@@ -1232,7 +1249,19 @@ export default function ProfileScreen() {
 
   // ── Main Render ─────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <LinearGradient
+      colors={['#06060C', '#120A2B', '#1C123E']}
+      style={{ flex: 1 }}
+    >
+      <LinearGradient
+        colors={['rgba(124, 58, 237, 0.78)', 'rgba(124, 58, 237, 0)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.6, y: 0.6 }}
+        style={styles.ambientGlowTop}
+      />
+      <View style={styles.ambientGlowBottom} />
+
+      <SafeAreaView style={styles.safeArea}>
       <FlatList
         data={workouts}
         renderItem={renderWorkoutItem}
@@ -1247,7 +1276,7 @@ export default function ProfileScreen() {
           />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
+          <BlurView intensity={25} tint="dark" style={styles.emptyContainer}>
             <Dumbbell
               size={28}
               color={Theme.colors.textMuted}
@@ -1257,13 +1286,14 @@ export default function ProfileScreen() {
             <Text style={styles.emptySubtext}>
               Your fitness journey starts when you log your first activity!
             </Text>
-          </View>
+          </BlurView>
         }
       />
 
       {renderEditModal()}
       {renderSingleEditModal()}
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
@@ -1280,7 +1310,24 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    backgroundColor: Theme.colors.background,
+    backgroundColor: 'transparent',
+  },
+  ambientGlowTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: 400,
+  },
+  ambientGlowBottom: {
+    position: 'absolute',
+    bottom: -150,
+    left: -150,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: Theme.colors.accent,
+    opacity: 0.05,
   },
   listContainer: {
     paddingHorizontal: 20,
@@ -1294,7 +1341,7 @@ const styles = StyleSheet.create({
 
   // ── Section 1: Profile Card ───────────────────────────────────
   profileCard: {
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.4)',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: Theme.colors.border,
@@ -1303,7 +1350,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   avatarCircle: {
-    backgroundColor: Theme.colors.background,
+    backgroundColor: '#06060C',
     width: 80,
     height: 80,
     borderRadius: 40,
@@ -1320,13 +1367,13 @@ const styles = StyleSheet.create({
   username: {
     color: '#FFF',
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     marginTop: 4,
   },
   displayName: {
     color: Theme.colors.textMuted,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   rankBadge: {
     flexDirection: 'row',
@@ -1336,17 +1383,18 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 5,
     paddingHorizontal: 14,
-    backgroundColor: Theme.colors.background,
+    backgroundColor: '#06060C',
     marginTop: 4,
   },
   rankText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 0.5,
   },
   bioText: {
     color: Theme.colors.textMuted,
     fontSize: 13,
+    fontFamily: 'Inter_400Regular',
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 4,
@@ -1355,7 +1403,7 @@ const styles = StyleSheet.create({
   joinDate: {
     color: Theme.colors.textMuted,
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginTop: 2,
   },
 
@@ -1367,7 +1415,7 @@ const styles = StyleSheet.create({
   },
   physicalPill: {
     flex: 1,
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.4)',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Theme.colors.border,
@@ -1379,12 +1427,12 @@ const styles = StyleSheet.create({
   physicalValue: {
     color: '#FFF',
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   physicalLabel: {
     color: Theme.colors.textMuted,
     fontSize: 10,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   genderEmoji: {
     fontSize: 16,
@@ -1399,7 +1447,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   fitnessPill: {
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.4)',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Theme.colors.border,
@@ -1409,7 +1457,7 @@ const styles = StyleSheet.create({
   fitnessPillText: {
     color: '#FFF',
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
 
   // ── Section 4: Stats Grid ────────────────────────────────────
@@ -1421,7 +1469,7 @@ const styles = StyleSheet.create({
   },
   statBox: {
     width: '48%' as any,
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.4)',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Theme.colors.border,
@@ -1432,12 +1480,12 @@ const styles = StyleSheet.create({
   statValue: {
     color: '#FFF',
     fontSize: 20,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
   },
   statLabel: {
     color: Theme.colors.textMuted,
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
 
   // ── Section 6: Actions ────────────────────────────────────────
@@ -1457,14 +1505,14 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
 
   // ── Section 5: Workout History ────────────────────────────────
   historyTitle: {
     color: '#FFF',
     fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1,
     marginTop: 4,
     borderBottomWidth: 1,
@@ -1472,13 +1520,15 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   workoutCard: {
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.5)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     padding: 16,
     gap: 6,
     marginBottom: 12,
+    overflow: 'hidden',
+    position: 'relative',
   },
   workoutRow: {
     flexDirection: 'row',
@@ -1493,29 +1543,28 @@ const styles = StyleSheet.create({
   workoutType: {
     color: '#FFF',
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   intensityTag: {
     fontSize: 10,
-    fontWeight: '800',
-    backgroundColor: Theme.colors.background,
+    fontFamily: 'Inter_800ExtraBold',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    overflow: 'hidden',
   },
   xpText: {
     color: Theme.colors.primary,
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
   },
   workoutSub: {
     color: Theme.colors.textMuted,
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'Inter_600SemiBold',
   },
   setsContainer: {
-    backgroundColor: Theme.colors.background,
+    backgroundColor: '#06060C',
     borderRadius: 8,
     padding: 10,
     gap: 6,
@@ -1530,24 +1579,25 @@ const styles = StyleSheet.create({
   setLabel: {
     color: Theme.colors.textMuted,
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     width: 44,
   },
   setValue: {
     color: '#FFF',
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   notesText: {
     color: Theme.colors.textMuted,
     fontSize: 13,
+    fontFamily: 'Inter_400Regular',
     fontStyle: 'italic',
     marginTop: 4,
   },
 
   // ── Empty State ───────────────────────────────────────────────
   emptyContainer: {
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.4)',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: Theme.colors.border,
@@ -1559,11 +1609,12 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#FFF',
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   emptySubtext: {
     color: Theme.colors.textMuted,
     fontSize: 12,
+    fontFamily: 'Inter_400Regular',
     textAlign: 'center',
   },
 
@@ -1584,7 +1635,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     color: '#FFF',
     fontSize: 18,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
   },
   modalScroll: {
     flex: 1,
@@ -1599,18 +1650,18 @@ const styles = StyleSheet.create({
   editFieldLabel: {
     color: Theme.colors.textMuted,
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   editInput: {
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.4)',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Theme.colors.border,
     color: '#FFF',
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
@@ -1625,11 +1676,12 @@ const styles = StyleSheet.create({
   readOnlyText: {
     color: Theme.colors.textMuted,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   readOnlyHint: {
     color: Theme.colors.textMuted,
     fontSize: 11,
+    fontFamily: 'Inter_400Regular',
     fontStyle: 'italic',
   },
   optionsRow: {
@@ -1638,7 +1690,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   optionChip: {
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.2)',
     borderRadius: 10,
     borderWidth: 1,
     borderColor: Theme.colors.border,
@@ -1648,7 +1700,7 @@ const styles = StyleSheet.create({
   optionChipText: {
     color: Theme.colors.textMuted,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   saveButton: {
     backgroundColor: Theme.colors.primary,
@@ -1659,9 +1711,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   saveButtonText: {
-    color: '#000',
+    color: '#FFF',
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
   },
   // ── Single Edit Modal Styles ──
   modalOverlay: {
@@ -1676,7 +1728,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   singleEditCard: {
-    backgroundColor: Theme.colors.card,
+    backgroundColor: '#0E091B',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: Theme.colors.border,
@@ -1694,7 +1746,7 @@ const styles = StyleSheet.create({
   singleEditTitle: {
     color: '#FFF',
     fontSize: 14,
-    fontWeight: '900',
+    fontFamily: 'Inter_900Black',
     letterSpacing: 1.5,
   },
   singleEditCloseButton: {
@@ -1708,7 +1760,7 @@ const styles = StyleSheet.create({
   },
   unitSelectorRow: {
     flexDirection: 'row',
-    backgroundColor: Theme.colors.background,
+    backgroundColor: '#06060C',
     borderRadius: 8,
     padding: 4,
     gap: 4,
@@ -1728,7 +1780,7 @@ const styles = StyleSheet.create({
   unitSelectorTabText: {
     color: Theme.colors.textMuted,
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     letterSpacing: 1,
   },
   unitSelectorTabTextActive: {
@@ -1740,12 +1792,12 @@ const styles = StyleSheet.create({
   inputLabel: {
     color: Theme.colors.textMuted,
     fontSize: 10,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     letterSpacing: 1,
     marginBottom: 4,
   },
   singleInput: {
-    backgroundColor: Theme.colors.background,
+    backgroundColor: '#06060C',
     borderColor: Theme.colors.border,
     borderWidth: 1,
     borderRadius: 8,
@@ -1753,7 +1805,7 @@ const styles = StyleSheet.create({
     height: 48,
     paddingHorizontal: 12,
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   rowInputsContainer: {
     flexDirection: 'row',
@@ -1765,7 +1817,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   dobInputText: {
-    backgroundColor: Theme.colors.background,
+    backgroundColor: '#06060C',
     borderColor: Theme.colors.border,
     borderWidth: 1,
     borderRadius: 8,
@@ -1773,18 +1825,18 @@ const styles = StyleSheet.create({
     height: 48,
     textAlign: 'center',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   dobSeparatorText: {
     color: Theme.colors.border,
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginTop: 18,
   },
   dobSubLabel: {
     color: Theme.colors.textMuted,
     fontSize: 9,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     textAlign: 'center',
     marginBottom: 4,
   },
@@ -1800,7 +1852,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: Theme.colors.background,
+    backgroundColor: '#06060C',
     borderColor: Theme.colors.border,
     borderWidth: 1,
     borderRadius: 12,
@@ -1812,7 +1864,7 @@ const styles = StyleSheet.create({
   genderChipItemText: {
     color: '#FFF',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   singleEditActions: {
     flexDirection: 'row',
@@ -1831,7 +1883,7 @@ const styles = StyleSheet.create({
   singleEditCancelText: {
     color: Theme.colors.textMuted,
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     letterSpacing: 1,
   },
   singleEditSaveBtn: {
@@ -1843,9 +1895,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   singleEditSaveText: {
-    color: '#000',
+    color: '#FFF',
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1,
   },
 });

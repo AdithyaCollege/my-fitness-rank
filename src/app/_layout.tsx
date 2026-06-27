@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, View, useColorScheme, LogBox } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
+import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold, Inter_900Black } from '@expo-google-fonts/inter';
 
 LogBox.ignoreLogs(['WebCrypto API is not supported']);
 
@@ -13,6 +14,14 @@ export default function RootLayout() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
+  
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+    Inter_900Black,
+  });
   
   const segments = useSegments();
   const router = useRouter();
@@ -181,10 +190,10 @@ export default function RootLayout() {
     }
   }, [session, loading, onboarded, segments]);
 
-  if (loading) {
+  if (loading || !fontsLoaded) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0A0E17' }}>
-        <ActivityIndicator size="large" color="#00FF66" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#06060C' }}>
+        <ActivityIndicator size="large" color="#7C3AED" />
       </View>
     );
   }

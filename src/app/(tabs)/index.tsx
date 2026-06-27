@@ -12,7 +12,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Theme, getRankDetails, RankTier } from '@/theme/theme';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Flame, Dumbbell, Trophy, LogOut, ChevronRight, Zap } from 'lucide-react-native';
+import { Flame, Dumbbell, Trophy, ChevronRight, Zap, Award } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -133,145 +135,203 @@ export default function DashboardScreen() {
     progressPercent = 100; // max rank
   }
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning ☀️';
+    if (hour < 17) return 'Good Afternoon 🌤';
+    return 'Good Evening 🌙';
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <View style={styles.headerUser}>
-          <Text style={styles.avatarEmoji}>{profile?.avatar_url?.split(' ')[0] || '🦊'}</Text>
-          <View>
-            <Text style={styles.usernameText}>{profile?.username || 'Gamer'}</Text>
-            <Text style={styles.rankBadgeText}>{rank.name} Tier</Text>
+    <LinearGradient
+      colors={['#06060C', '#120A2B', '#1C123E']}
+      style={{ flex: 1 }}
+    >
+      <LinearGradient
+        colors={['rgba(124, 58, 237, 0.78)', 'rgba(124, 58, 237, 0)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.6, y: 0.6 }}
+        style={styles.ambientGlowTop}
+      />
+      <View style={styles.ambientGlowBottom} />
+
+      <SafeAreaView style={styles.safeArea}>
+
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.avatarEmoji}>{profile?.avatar_url?.split(' ')[0] || '🦊'}</Text>
+            <Text style={styles.greetingText}>{getGreeting()}</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <LogOut size={20} color={Theme.colors.textMuted} />
-        </TouchableOpacity>
-      </View>
 
-      <ScrollView
-        contentContainerStyle={styles.container}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Theme.colors.primary} />
-        }
-      >
-        {/* Streak & XP Card */}
-        <View style={styles.heroCard}>
-          <View style={styles.heroRow}>
-            {/* XP and Rank Display */}
-            <View style={styles.xpCol}>
-              <Text style={styles.xpLabel}>TOTAL XP</Text>
-              <Text style={[styles.xpText, { color: rank.color }]}>{profile?.total_xp ?? 0}</Text>
-            </View>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Theme.colors.primary} />
+          }
+        >
+          {/* Hey, User Header */}
+          <View style={styles.welcomeContainer}>
+            <Text style={styles.welcomeText}>Hey, {profile?.username || 'Gamer'}</Text>
+            <Text style={styles.welcomeSubtext}>Your AI is ready to optimize today</Text>
+          </View>
 
-            {/* Streak Counter */}
-            <View style={[styles.streakBox, Theme.getGlow(Theme.colors.primary, 'low')]}>
-              <Flame size={24} color={Theme.colors.primary} fill={Theme.colors.primary} />
-              <View>
-                <Text style={styles.streakCount}>{profile?.current_streak ?? 0}</Text>
-                <Text style={styles.streakLabel}>STREAK</Text>
+          <BlurView intensity={25} tint="dark" style={styles.heroCard}>
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.07)', 'rgba(255, 255, 255, 0.01)']}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.heroRow}>
+              {/* XP and Rank Display */}
+              <View style={styles.xpCol}>
+                <Text style={styles.xpLabel}>TOTAL XP</Text>
+                <Text style={[
+                  styles.xpText,
+                  { color: '#FFF' },
+                  Theme.getGlow(rank.color, 'high'),
+                ]}>
+                  {profile?.total_xp ?? 0}
+                </Text>
+              </View>
+
+              {/* Streak Counter */}
+              <View style={styles.streakBox}>
+                <Flame size={26} color="#D8B4FE" fill="#D8B4FE" />
+                <View>
+                  <Text style={styles.streakCount}>{profile?.current_streak ?? 0}</Text>
+                  <Text style={styles.streakLabel}>STREAK</Text>
+                </View>
               </View>
             </View>
-          </View>
 
-          {/* Progress Bar to next rank */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressLabels}>
-              <Text style={[styles.progressTier, { color: rank.color }]}>{rank.name}</Text>
-              {nextRank ? (
-                <Text style={styles.progressRemaining}>{xpRemaining} XP to {nextRankName}</Text>
-              ) : (
-                <Text style={styles.progressRemaining}>MAX RANK REACHED</Text>
-              )}
+            {/* Progress Bar to next rank */}
+            <View style={styles.progressContainer}>
+              <View style={styles.progressLabels}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Award size={14} color={rank.color} />
+                  <Text style={[styles.progressTier, { color: rank.color }]}>{rank.name}</Text>
+                </View>
+                {nextRank ? (
+                  <Text style={styles.progressRemaining}>{xpRemaining} XP to {nextRankName}</Text>
+                ) : (
+                  <Text style={styles.progressRemaining}>MAX RANK REACHED</Text>
+                )}
+              </View>
+              <View style={styles.progressBarBg}>
+                <LinearGradient
+                  colors={[rank.color, '#FFF']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[
+                    styles.progressBarFill,
+                    { width: `${progressPercent}%` },
+                    Theme.getGlow(rank.color, 'medium'),
+                  ]}
+                />
+              </View>
             </View>
-            <View style={styles.progressBarBg}>
-              <View
-                style={[
-                  styles.progressBarFill,
-                  { width: `${progressPercent}%`, backgroundColor: rank.color },
-                  Theme.getGlow(rank.color, 'low'),
-                ]}
+          </BlurView>
+
+          {/* Quick actions */}
+          <TouchableOpacity
+            style={[styles.logButton, Theme.getGlow(Theme.colors.primary, 'medium')]}
+            onPress={() => router.push('/log-workout')}
+          >
+            <Dumbbell size={20} color="#FFF" strokeWidth={2.5} />
+            <Text style={styles.logButtonText}>LOG NEW WORKOUT</Text>
+            <ChevronRight size={18} color="#FFF" strokeWidth={2.5} />
+          </TouchableOpacity>
+
+          {/* Stats Row */}
+          <View style={styles.statsRow}>
+            <BlurView intensity={25} tint="dark" style={styles.statCard}>
+              <LinearGradient
+                colors={['rgba(255, 255, 255, 0.07)', 'rgba(255, 255, 255, 0.01)']}
+                style={StyleSheet.absoluteFill}
               />
-            </View>
+              <Trophy size={18} color={Theme.colors.warning} />
+              <Text style={styles.statValue}>{profile?.longest_streak ?? 0} Days</Text>
+              <Text style={styles.statLabel}>Best Streak</Text>
+            </BlurView>
+            <BlurView intensity={25} tint="dark" style={styles.statCard}>
+              <LinearGradient
+                colors={['rgba(255, 255, 255, 0.07)', 'rgba(255, 255, 255, 0.01)']}
+                style={StyleSheet.absoluteFill}
+              />
+              <Zap size={18} color={Theme.colors.secondary} />
+              <Text style={styles.statValue}>+{Math.round((Math.min(profile?.current_streak ?? 0, 10) * 5))}%</Text>
+              <Text style={styles.statLabel}>Streak Bonus</Text>
+            </BlurView>
           </View>
-        </View>
 
-        {/* Quick actions */}
-        <TouchableOpacity
-          style={[styles.logButton, Theme.getGlow(Theme.colors.primary, 'medium')]}
-          onPress={() => router.push('/log-workout')}
-        >
-          <Dumbbell size={22} color="#000" strokeWidth={2.5} />
-          <Text style={styles.logButtonText}>LOG NEW WORKOUT</Text>
-          <ChevronRight size={20} color="#000" strokeWidth={2.5} />
-        </TouchableOpacity>
-
-        {/* Stats Row */}
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Trophy size={20} color={Theme.colors.warning} />
-            <Text style={styles.statValue}>{profile?.longest_streak ?? 0} Days</Text>
-            <Text style={styles.statLabel}>Best Streak</Text>
+          {/* Recent Activity */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>DAILY SUMMARY</Text>
           </View>
-          <View style={styles.statCard}>
-            <Zap size={20} color={Theme.colors.secondary} />
-            <Text style={styles.statValue}>+{Math.round((Math.min(profile?.current_streak ?? 0, 10) * 5))}%</Text>
-            <Text style={styles.statLabel}>Streak Bonus</Text>
-          </View>
-        </View>
 
-        {/* Recent Workouts */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>RECENT ACTIVITY</Text>
-        </View>
-
-        {recentWorkouts.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Dumbbell size={32} color={Theme.colors.textMuted} style={{ opacity: 0.5 }} />
-            <Text style={styles.emptyText}>No workouts logged yet.</Text>
-            <Text style={styles.emptySubtext}>Log a workout to start earning XP and ranking up!</Text>
-          </View>
-        ) : (
-          <View style={styles.workoutList}>
-            {recentWorkouts.map((workout) => (
-              <View key={workout.id} style={styles.workoutCard}>
-                <View style={styles.workoutHeader}>
-                  <View style={[styles.workoutTypeContainer, { alignItems: 'flex-start', flex: 1 }]}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.workoutType}>{workout.exercise_name || workout.type}</Text>
-                      {workout.exercise_name && (
-                        <Text style={{ color: Theme.colors.textMuted, fontSize: 10, fontWeight: '700', marginTop: 2 }}>
-                          {workout.type.toUpperCase()}{workout.primary_muscle ? ` • ${workout.primary_muscle.toUpperCase()}` : ''}
-                        </Text>
-                      )}
+          {recentWorkouts.length === 0 ? (
+            <BlurView intensity={25} tint="dark" style={styles.emptyCard}>
+              <Dumbbell size={32} color={Theme.colors.textMuted} style={{ opacity: 0.5 }} />
+              <Text style={styles.emptyText}>No workouts logged yet.</Text>
+              <Text style={styles.emptySubtext}>Log a workout to start earning XP and ranking up!</Text>
+            </BlurView>
+          ) : (
+            <View style={styles.workoutList}>
+              {recentWorkouts.map((workout) => (
+                <BlurView key={workout.id} intensity={25} tint="dark" style={styles.workoutCard}>
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0.07)', 'rgba(255, 255, 255, 0.01)']}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={[
+                    styles.workoutIconBox, 
+                    {
+                      borderColor: workout.intensity === 'Intense' ? 'rgba(255, 42, 95, 0.3)' :
+                                   workout.intensity === 'Moderate' ? 'rgba(245, 158, 11, 0.3)' :
+                                   'rgba(16, 185, 129, 0.3)',
+                      backgroundColor: workout.intensity === 'Intense' ? 'rgba(255, 42, 95, 0.12)' :
+                                       workout.intensity === 'Moderate' ? 'rgba(245, 158, 11, 0.12)' :
+                                       'rgba(16, 185, 129, 0.12)',
+                    }
+                  ]}>
+                    <Dumbbell size={20} color={workout.intensity === 'Intense' ? Theme.colors.danger :
+                                              workout.intensity === 'Moderate' ? Theme.colors.warning :
+                                              Theme.colors.success} />
+                  </View>
+                  <View style={styles.workoutContent}>
+                    <Text style={styles.workoutName}>{workout.exercise_name || workout.type}</Text>
+                    <Text style={styles.workoutDesc} numberOfLines={1}>{workout.notes || 'Workout recorded successfully.'}</Text>
+                  </View>
+                  <View style={styles.workoutRight}>
+                    <View style={[
+                      styles.tagBadge, 
+                      { backgroundColor: workout.intensity === 'Intense' ? 'rgba(255, 42, 95, 0.15)' :
+                                         workout.intensity === 'Moderate' ? 'rgba(245, 158, 11, 0.15)' :
+                                         'rgba(16, 185, 129, 0.15)' }
+                    ]}>
+                      <Text style={[
+                        styles.tagBadgeText,
+                        { color: workout.intensity === 'Intense' ? Theme.colors.danger :
+                                 workout.intensity === 'Moderate' ? Theme.colors.warning :
+                                 Theme.colors.success }
+                      ]}>
+                        {workout.intensity === 'Intense' ? 'Hard' : workout.intensity === 'Moderate' ? 'Medium' : 'Light'}
+                      </Text>
                     </View>
-                    <Text style={[styles.workoutIntensity, {
-                      marginTop: 2,
-                      color: workout.intensity === 'Intense' ? Theme.colors.danger :
-                             workout.intensity === 'Moderate' ? Theme.colors.warning :
-                             Theme.colors.success
-                    }]}>
-                      {workout.intensity}
+                    <Text style={styles.workoutTime}>
+                      {new Date(workout.logged_at).toLocaleTimeString(undefined, {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </Text>
                   </View>
-                  <Text style={styles.workoutXp}>+{workout.xp_earned} XP</Text>
-                </View>
-                
-                <Text style={styles.workoutSub}>
-                  {workout.duration_min} mins • {new Date(workout.logged_at).toLocaleDateString(undefined, {
-                    month: 'short',
-                    day: 'numeric'
-                  })}
-                </Text>
-                
-                {workout.notes ? (
-                  <Text style={styles.workoutNotes} numberOfLines={1}>{workout.notes}</Text>
-                ) : null}
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+                </BlurView>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
@@ -284,7 +344,24 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    backgroundColor: Theme.colors.background,
+    backgroundColor: 'transparent',
+  },
+  ambientGlowTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: 400,
+  },
+  ambientGlowBottom: {
+    position: 'absolute',
+    bottom: -150,
+    left: -150,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: Theme.colors.accent,
+    opacity: 0.05,
   },
   container: {
     paddingHorizontal: 20,
@@ -298,34 +375,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderColor: Theme.colors.border,
   },
-  headerUser: {
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
   avatarEmoji: {
-    fontSize: 34,
-    backgroundColor: Theme.colors.card,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    fontSize: 24,
+    backgroundColor: 'transparent',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     textAlign: 'center',
-    lineHeight: 48,
+    lineHeight: 40,
     borderWidth: 1,
     borderColor: Theme.colors.border,
   },
-  usernameText: {
+  greetingText: {
     color: '#FFF',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  rankBadgeText: {
-    color: Theme.colors.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
   },
   logoutButton: {
     width: 40,
@@ -337,13 +407,33 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Theme.colors.border,
   },
+  welcomeContainer: {
+    gap: 4,
+    marginBottom: 4,
+  },
+  welcomeText: {
+    color: '#FFF',
+    fontSize: 28,
+    fontFamily: 'Inter_900Black',
+    letterSpacing: -0.5,
+  },
+  welcomeSubtext: {
+    color: Theme.colors.textMuted,
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+  },
   heroCard: {
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.45)',
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderWidth: 1.5,
+    borderColor: 'rgba(124, 58, 237, 0.28)',
     padding: 20,
     gap: 20,
+    overflow: 'hidden',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
   },
   heroRow: {
     flexDirection: 'row',
@@ -356,33 +446,34 @@ const styles = StyleSheet.create({
   xpLabel: {
     color: Theme.colors.textMuted,
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1,
   },
   xpText: {
     fontSize: 34,
-    fontWeight: '900',
+    fontFamily: 'Inter_900Black',
   },
   streakBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Theme.colors.background,
+    backgroundColor: 'rgba(124, 58, 237, 0.18)',
     borderWidth: 1.5,
-    borderColor: Theme.colors.primary,
+    borderColor: 'rgba(124, 58, 237, 0.5)',
     borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    gap: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    gap: 8,
   },
   streakCount: {
     color: '#FFF',
-    fontSize: 20,
-    fontWeight: '900',
+    fontSize: 22,
+    fontFamily: 'Inter_900Black',
+    lineHeight: 22,
   },
   streakLabel: {
     color: Theme.colors.textMuted,
     fontSize: 9,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1,
   },
   progressContainer: {
@@ -395,17 +486,17 @@ const styles = StyleSheet.create({
   },
   progressTier: {
     fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 0.5,
   },
   progressRemaining: {
     color: Theme.colors.textMuted,
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   progressBarBg: {
     height: 8,
-    backgroundColor: Theme.colors.background,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -425,9 +516,9 @@ const styles = StyleSheet.create({
   },
   logButtonText: {
     flex: 1,
-    color: '#000',
+    color: '#FFF',
     fontSize: 15,
-    fontWeight: '900',
+    fontFamily: 'Inter_900Black',
     letterSpacing: 1,
   },
   statsRow: {
@@ -437,54 +528,59 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: Theme.colors.card,
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
+    backgroundColor: 'rgba(22, 15, 43, 0.45)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(124, 58, 237, 0.22)',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     gap: 4,
+    overflow: 'hidden',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
   },
   statValue: {
     color: '#FFF',
     fontSize: 18,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     marginTop: 2,
   },
   statLabel: {
     color: Theme.colors.textMuted,
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   sectionHeader: {
     marginTop: 10,
-    borderBottomWidth: 1,
-    borderColor: Theme.colors.border,
-    paddingBottom: 8,
+    paddingBottom: 4,
   },
   sectionTitle: {
     color: '#FFF',
     fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1,
   },
   emptyCard: {
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.45)',
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderWidth: 1.5,
+    borderColor: 'rgba(124, 58, 237, 0.22)',
     padding: 30,
     alignItems: 'center',
     gap: 8,
+    overflow: 'hidden',
   },
   emptyText: {
     color: '#FFF',
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   emptySubtext: {
     color: Theme.colors.textMuted,
     fontSize: 12,
+    fontFamily: 'Inter_400Regular',
     textAlign: 'center',
     lineHeight: 18,
   },
@@ -492,50 +588,59 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   workoutCard: {
-    backgroundColor: Theme.colors.card,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
-    padding: 16,
-    gap: 6,
-  },
-  workoutHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  workoutTypeContainer: {
+    backgroundColor: 'rgba(22, 15, 43, 0.45)',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(124, 58, 237, 0.22)',
+    padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
+    overflow: 'hidden',
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
   },
-  workoutType: {
+  workoutIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  workoutContent: {
+    flex: 1,
+    gap: 4,
+  },
+  workoutName: {
     color: '#FFF',
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
-  workoutIntensity: {
-    fontSize: 10,
-    fontWeight: '800',
-    backgroundColor: Theme.colors.background,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  workoutXp: {
-    color: Theme.colors.primary,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  workoutSub: {
+  workoutDesc: {
     color: Theme.colors.textMuted,
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'Inter_400Regular',
   },
-  workoutNotes: {
+  workoutRight: {
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  tagBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  tagBadgeText: {
+    fontSize: 9,
+    fontFamily: 'Inter_800ExtraBold',
+    textTransform: 'uppercase',
+  },
+  workoutTime: {
     color: Theme.colors.textMuted,
-    fontSize: 13,
-    fontStyle: 'italic',
-    marginTop: 2,
+    fontSize: 10,
+    fontFamily: 'Inter_600SemiBold',
   },
 });

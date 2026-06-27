@@ -18,6 +18,7 @@ import { useRouter } from 'expo-router';
 import { X, Plus, Trash2, Search, Flame, Award, Clock } from 'lucide-react-native';
 import { Image } from 'expo-image';
 import exercisesData from '@/lib/exercises.json';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const INTENSITIES = [
   { name: 'Light', mult: 1.0, desc: 'Steady pace / Low heart rate' },
@@ -245,8 +246,20 @@ export default function LogWorkoutScreen() {
   const isCardio = selectedExercise && mapCategoryToType(selectedExercise.category) === 'Cardio';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
+    <LinearGradient
+      colors={['#06060C', '#120A2B', '#1C123E']}
+      style={{ flex: 1 }}
+    >
+      <LinearGradient
+        colors={['rgba(124, 58, 237, 0.78)', 'rgba(124, 58, 237, 0)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.6, y: 0.6 }}
+        style={styles.ambientGlowTop}
+      />
+      <View style={styles.ambientGlowBottom} />
+
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
@@ -548,6 +561,7 @@ export default function LogWorkoutScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </LinearGradient>
   );
 }
 
@@ -560,7 +574,24 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    backgroundColor: Theme.colors.background,
+    backgroundColor: 'transparent',
+  },
+  ambientGlowTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: 400,
+  },
+  ambientGlowBottom: {
+    position: 'absolute',
+    bottom: -150,
+    left: -150,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: Theme.colors.accent,
+    opacity: 0.05,
   },
   header: {
     flexDirection: 'row',
@@ -568,13 +599,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderColor: Theme.colors.border,
   },
   headerTitle: {
     color: '#FFF',
     fontSize: 16,
-    fontWeight: '900',
+    fontFamily: 'Inter_900Black',
     letterSpacing: 1.5,
   },
   closeButton: {
@@ -598,7 +627,7 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.4)',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Theme.colors.border,
@@ -613,10 +642,10 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#FFF',
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   resultsList: {
-    backgroundColor: Theme.colors.card,
+    backgroundColor: '#0E091B',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: Theme.colors.border,
@@ -637,15 +666,15 @@ const styles = StyleSheet.create({
   resultName: {
     color: '#FFF',
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     flex: 1,
   },
   resultCategory: {
     color: Theme.colors.primary,
     fontSize: 9,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1,
-    backgroundColor: Theme.colors.primary + '15',
+    backgroundColor: 'rgba(124, 58, 237, 0.15)',
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 4,
@@ -653,13 +682,13 @@ const styles = StyleSheet.create({
   resultMuscle: {
     color: Theme.colors.textMuted,
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   emptyResultsText: {
     color: Theme.colors.textMuted,
     textAlign: 'center',
     padding: 24,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   quickStartContainer: {
     marginTop: 10,
@@ -671,7 +700,7 @@ const styles = StyleSheet.create({
   },
   quickChip: {
     width: '48%',
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.4)',
     borderWidth: 1,
     borderColor: Theme.colors.border,
     borderRadius: 12,
@@ -681,21 +710,21 @@ const styles = StyleSheet.create({
   quickChipText: {
     color: '#FFF',
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   quickChipSub: {
-    color: Theme.colors.secondary,
+    color: Theme.colors.primary,
     fontSize: 10,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
   },
   formSection: {
     gap: 20,
   },
   selectedExerciseCard: {
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.4)',
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: Theme.colors.secondary,
+    borderColor: Theme.colors.primary,
     padding: 16,
     gap: 12,
   },
@@ -706,37 +735,39 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   selectedType: {
-    color: Theme.colors.secondary,
+    color: Theme.colors.primary,
     fontSize: 10,
-    fontWeight: '900',
+    fontFamily: 'Inter_900Black',
     letterSpacing: 1,
   },
   selectedName: {
     color: '#FFF',
     fontSize: 18,
-    fontWeight: '900',
+    fontFamily: 'Inter_900Black',
   },
   selectedMuscle: {
     color: Theme.colors.textMuted,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   changeExerciseBtn: {
-    backgroundColor: Theme.colors.border,
+    backgroundColor: '#06060C',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
   },
   changeExerciseText: {
     color: '#FFF',
     fontSize: 10,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 0.5,
   },
   imageContainer: {
     width: '100%',
     height: 200,
-    backgroundColor: '#070C15',
+    backgroundColor: '#06060C',
     borderRadius: 12,
     overflow: 'hidden',
     justifyContent: 'center',
@@ -749,9 +780,9 @@ const styles = StyleSheet.create({
     height: '90%',
   },
   xpPreviewCard: {
-    backgroundColor: '#0F251E',
+    backgroundColor: 'rgba(124, 58, 237, 0.15)',
     borderColor: Theme.colors.primary,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
@@ -760,7 +791,7 @@ const styles = StyleSheet.create({
   xpPreviewTitle: {
     color: Theme.colors.primary,
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1.5,
   },
   xpRow: {
@@ -771,23 +802,23 @@ const styles = StyleSheet.create({
   xpNumber: {
     color: '#FFF',
     fontSize: 48,
-    fontWeight: '900',
+    fontFamily: 'Inter_900Black',
     lineHeight: 48,
   },
   xpSub: {
     color: Theme.colors.primary,
     fontSize: 18,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     paddingBottom: 4,
   },
   xpStreakBonus: {
-    color: '#A2E8C2',
+    color: '#FFF',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     textAlign: 'center',
   },
   card: {
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.4)',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: Theme.colors.border,
@@ -797,7 +828,7 @@ const styles = StyleSheet.create({
   label: {
     color: Theme.colors.textMuted,
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1,
   },
   timeInputsRow: {
@@ -814,16 +845,16 @@ const styles = StyleSheet.create({
   timeLabel: {
     color: Theme.colors.textMuted,
     fontSize: 9,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   timeInput: {
-    backgroundColor: Theme.colors.background,
+    backgroundColor: '#06060C',
     borderColor: Theme.colors.border,
     borderWidth: 1.5,
     borderRadius: 8,
     color: '#FFF',
     fontSize: 20,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     width: 60,
     height: 52,
     textAlign: 'center',
@@ -831,7 +862,7 @@ const styles = StyleSheet.create({
   timeDivider: {
     color: Theme.colors.border,
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     marginTop: 18,
   },
   setsHeader: {
@@ -847,7 +878,7 @@ const styles = StyleSheet.create({
   addSetBtnText: {
     color: Theme.colors.primary,
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
   },
   setsList: {
     gap: 10,
@@ -860,12 +891,12 @@ const styles = StyleSheet.create({
   setNumber: {
     color: '#FFF',
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     width: 50,
   },
   setInput: {
     flex: 1,
-    backgroundColor: Theme.colors.background,
+    backgroundColor: '#06060C',
     borderColor: Theme.colors.border,
     borderWidth: 1,
     borderRadius: 8,
@@ -873,13 +904,13 @@ const styles = StyleSheet.create({
     height: 40,
     paddingHorizontal: 12,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   intensityList: {
     gap: 8,
   },
   intensityCell: {
-    backgroundColor: Theme.colors.background,
+    backgroundColor: 'rgba(22, 15, 43, 0.2)',
     borderColor: Theme.colors.border,
     borderWidth: 1.5,
     borderRadius: 12,
@@ -894,27 +925,27 @@ const styles = StyleSheet.create({
   intensityName: {
     color: '#FFF',
     fontSize: 14,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
   },
   intensityMult: {
     color: Theme.colors.textMuted,
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   intensityDesc: {
     color: Theme.colors.textMuted,
     fontSize: 11,
-    fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
   },
   notesInput: {
-    backgroundColor: Theme.colors.background,
+    backgroundColor: '#06060C',
     borderColor: Theme.colors.border,
     borderWidth: 1,
     borderRadius: 10,
     color: '#FFF',
     padding: 12,
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Inter_500Medium',
     textAlignVertical: 'top',
   },
   saveButton: {
@@ -925,9 +956,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   saveButtonText: {
-    color: '#000',
+    color: '#FFF',
     fontSize: 15,
-    fontWeight: '900',
+    fontFamily: 'Inter_900Black',
     letterSpacing: 1,
   },
 });

@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase';
 import { Theme } from '@/theme/theme';
 import { useRouter } from 'expo-router';
 import { Check, X, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // ─── Constants ──────────────────────────────────────────────────────────────────
 
@@ -624,10 +625,14 @@ export default function OnboardingScreen() {
   // ─── Main render ─────────────────────────────────────────────────────────────
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.flex}
+    <LinearGradient
+      colors={['#06060C', '#120A2B', '#1C123E']}
+      style={{ flex: 1 }}
     >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.flex}
+      >
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={styles.container}
@@ -678,6 +683,7 @@ export default function OnboardingScreen() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
@@ -686,7 +692,7 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
-    backgroundColor: Theme.colors.background,
+    backgroundColor: 'transparent',
   },
   loadingContainer: {
     flex: 1,
@@ -733,12 +739,12 @@ const styles = StyleSheet.create({
   stepLabelStep: {
     fontSize: 11,
     color: Theme.colors.textMuted,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     letterSpacing: 2,
   },
   stepLabelTitle: {
     fontSize: 22,
-    fontWeight: '900',
+    fontFamily: 'Inter_900Black',
     color: '#FFF',
     letterSpacing: 1.5,
   },
@@ -760,7 +766,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: '#FFF',
     fontSize: 13,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1,
   },
 
@@ -774,14 +780,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     color: '#FFF',
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   inputFlat: {
     flex: 1,
     height: '100%',
     color: '#FFF',
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     paddingHorizontal: 0,
   },
   inputRow: {
@@ -802,6 +808,7 @@ const styles = StyleSheet.create({
   inputTip: {
     fontSize: 11,
     color: Theme.colors.textMuted,
+    fontFamily: 'Inter_400Regular',
   },
 
   // ─── Avatar Grid ──────────────────────────────────────────────────────────
@@ -828,11 +835,12 @@ const styles = StyleSheet.create({
   },
   avatarName: {
     fontSize: 14,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
   },
   avatarDesc: {
     fontSize: 10,
     color: Theme.colors.textMuted,
+    fontFamily: 'Inter_400Regular',
     textAlign: 'center',
   },
   checkBadge: {
@@ -873,7 +881,7 @@ const styles = StyleSheet.create({
   pillText: {
     color: Theme.colors.textMuted,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
 
   // ─── Date of Birth ────────────────────────────────────────────────────────
@@ -889,7 +897,7 @@ const styles = StyleSheet.create({
   dobLabel: {
     fontSize: 10,
     color: Theme.colors.textMuted,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     letterSpacing: 1,
   },
   dobInput: {
@@ -901,13 +909,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     color: '#FFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     textAlign: 'center',
   },
   dobSeparator: {
     color: Theme.colors.textMuted,
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     marginBottom: 12,
   },
 
@@ -934,7 +942,7 @@ const styles = StyleSheet.create({
   },
   goalTitle: {
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     color: '#FFF',
     textAlign: 'center',
     letterSpacing: 0.5,
@@ -965,12 +973,13 @@ const styles = StyleSheet.create({
   },
   expTitle: {
     fontSize: 14,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     color: '#FFF',
   },
   expDesc: {
     fontSize: 11,
     color: Theme.colors.textMuted,
+    fontFamily: 'Inter_400Regular',
   },
 
   // ─── Bio ──────────────────────────────────────────────────────────────────
@@ -982,7 +991,7 @@ const styles = StyleSheet.create({
   bioOptional: {
     fontSize: 10,
     color: Theme.colors.textMuted,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     letterSpacing: 1,
   },
   bioInput: {
@@ -995,11 +1004,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     color: '#FFF',
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Inter_600SemiBold',
   },
   bioCounter: {
     fontSize: 11,
     color: Theme.colors.textMuted,
+    fontFamily: 'Inter_600SemiBold',
     textAlign: 'right',
   },
 
@@ -1021,7 +1031,7 @@ const styles = StyleSheet.create({
   backButtonText: {
     color: Theme.colors.textMuted,
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
     letterSpacing: 0.5,
   },
   backButtonPlaceholder: {
@@ -1038,9 +1048,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   nextButtonText: {
-    color: '#000',
+    color: '#FFF',
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1,
   },
 });

@@ -13,6 +13,8 @@ import * as Linking from 'expo-linking';
 import { supabase } from '@/lib/supabase';
 import { Theme } from '@/theme/theme';
 import { Dumbbell, ShieldCheck } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -70,86 +72,100 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Background neon ambient glows */}
-      <View style={styles.ambientGlowTop} />
-      <View style={styles.ambientGlowBottom} />
+    <LinearGradient
+      colors={['#06060C', '#120A2B', '#1C123E']}
+      style={{ flex: 1 }}
+    >
+      <View style={styles.container}>
+        {/* Background neon ambient glows */}
+        <LinearGradient
+          colors={['rgba(124, 58, 237, 0.78)', 'rgba(124, 58, 237, 0)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.6, y: 0.6 }}
+          style={styles.ambientGlowTop}
+        />
+        <View style={styles.ambientGlowBottom} />
 
-      <View style={styles.content}>
-        {/* Esports Logo Header */}
-        <View style={styles.logoContainer}>
-          <View style={[styles.logoIconCircle, Theme.getGlow(Theme.colors.primary, 'high')]}>
-            <Dumbbell size={40} color={Theme.colors.primary} strokeWidth={2.5} />
+        <View style={styles.content}>
+          {/* Esports Logo Header */}
+          <View style={styles.logoContainer}>
+            <View style={[styles.logoIconCircle, Theme.getGlow(Theme.colors.primary, 'high')]}>
+              <Dumbbell size={40} color={Theme.colors.primary} strokeWidth={2.5} />
+            </View>
+            <Text style={styles.logoText}>
+              GYM<Text style={{ color: Theme.colors.primary }}>RANK</Text>
+            </Text>
+            <Text style={styles.subtitle}>GAMIFY YOUR GRIND</Text>
           </View>
-          <Text style={styles.logoText}>
-            GYM<Text style={{ color: Theme.colors.primary }}>RANK</Text>
-          </Text>
-          <Text style={styles.subtitle}>GAMIFY YOUR GRIND</Text>
-        </View>
 
-        {/* Info Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardHeader}>RANK UP YOUR FITNESS</Text>
-          <Text style={styles.cardText}>
-            Log workouts, maintain your daily consistency streak, and rise through the competitive tiers from Bronze to Champion.
-          </Text>
-          
-          <View style={styles.divider} />
+          {/* Info Card */}
+          <View style={styles.card}>
+            <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+            <Text style={styles.cardHeader}>RANK UP YOUR FITNESS</Text>
+            <Text style={styles.cardText}>
+              Log workouts, maintain your daily consistency streak, and rise through the competitive tiers from Bronze to Champion.
+            </Text>
+            
+            <View style={styles.divider} />
 
-          <View style={styles.featureRow}>
-            <ShieldCheck size={20} color={Theme.colors.secondary} />
-            <Text style={styles.featureText}>Secure, unified cloud profiles</Text>
+            <View style={styles.featureRow}>
+              <ShieldCheck size={20} color={Theme.colors.primary} />
+              <Text style={styles.featureText}>Compete in Global Leaderboards</Text>
+            </View>
+
+            <View style={styles.featureRow}>
+              <ShieldCheck size={20} color={Theme.colors.primary} />
+              <Text style={styles.featureText}>Create and Join Fitness Squads</Text>
+            </View>
           </View>
-        </View>
 
-        {/* Login Action */}
-        <View style={styles.actionContainer}>
-          {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
+          {/* Login Actions */}
+          <View style={styles.actionContainer}>
+            {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
 
-          <TouchableOpacity
-            style={[
-              styles.loginButton,
-              Theme.getGlow(Theme.colors.primary, 'medium'),
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={handleGoogleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#000" />
-            ) : (
-              <View style={styles.buttonInner}>
-                <Text style={styles.googleIconText}>G</Text>
-                <Text style={styles.loginButtonText}>SIGN IN WITH GOOGLE</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          
-          <Text style={styles.termsText}>
-            By signing in, you agree to join the global leaderboard.
-          </Text>
+            <TouchableOpacity
+              style={[
+                styles.loginButton,
+                loading && styles.buttonDisabled,
+                Theme.getGlow(Theme.colors.primary, 'medium'),
+              ]}
+              onPress={handleGoogleLogin}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <View style={styles.buttonInner}>
+                  <Text style={styles.googleIconText}>G</Text>
+                  <Text style={styles.loginButtonText}>SIGN IN WITH GOOGLE</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            
+            <Text style={styles.termsText}>
+              By signing in, you agree to our Terms and Conditions.
+            </Text>
+          </View>
         </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Theme.colors.background,
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
   },
   ambientGlowTop: {
     position: 'absolute',
-    top: -150,
-    right: -150,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: Theme.colors.primary,
-    opacity: 0.15,
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: 400,
   },
   ambientGlowBottom: {
     position: 'absolute',
@@ -159,7 +175,7 @@ const styles = StyleSheet.create({
     height: 300,
     borderRadius: 150,
     backgroundColor: Theme.colors.accent,
-    opacity: 0.1,
+    opacity: 0.08,
   },
   content: {
     width: '90%',
@@ -183,35 +199,36 @@ const styles = StyleSheet.create({
   },
   logoText: {
     fontSize: 38,
-    fontWeight: '900',
     color: '#FFF',
     letterSpacing: 2,
-    fontFamily: Platform.OS === 'ios' ? 'HelveticaNeue-CondensedBold' : 'sans-serif-condensed',
+    fontFamily: 'Inter_900Black',
   },
   subtitle: {
     fontSize: 14,
     color: Theme.colors.textMuted,
     letterSpacing: 4,
-    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
   },
   card: {
     width: '100%',
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(22, 15, 43, 0.4)',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     padding: 24,
     gap: 16,
+    overflow: 'hidden',
   },
   cardHeader: {
     color: '#FFF',
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1.5,
   },
   cardText: {
     color: Theme.colors.textMuted,
     fontSize: 14,
+    fontFamily: 'Inter_400Regular',
     lineHeight: 20,
   },
   divider: {
@@ -225,9 +242,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   featureText: {
-    color: Theme.colors.text,
+    color: '#FFF',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
   actionContainer: {
     width: '100%',
@@ -251,25 +268,26 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   googleIconText: {
-    color: '#000',
+    color: '#FFF',
     fontSize: 22,
-    fontWeight: '900',
+    fontFamily: 'Inter_900Black',
   },
   loginButtonText: {
-    color: '#000',
+    color: '#FFF',
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1,
   },
   errorText: {
     color: Theme.colors.danger,
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     textAlign: 'center',
   },
   termsText: {
     color: Theme.colors.textMuted,
     fontSize: 11,
+    fontFamily: 'Inter_400Regular',
     textAlign: 'center',
     marginTop: 4,
   },

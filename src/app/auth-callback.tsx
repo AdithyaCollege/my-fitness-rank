@@ -129,7 +129,7 @@ export default function AuthCallbackScreen() {
           <Dumbbell size={48} color={Theme.colors.primary} />
         </View>
         <Text style={styles.title}>GYMRANK</Text>
-        <ActivityIndicator size="large" color={Theme.colors.secondary} style={styles.spinner} />
+        <ActivityIndicator size="large" color={Theme.colors.primary} style={styles.spinner} />
         <Text style={styles.status}>{statusText}</Text>
       </View>
     </SafeAreaView>
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   title: {
     color: '#FFF',
     fontSize: 24,
-    fontWeight: '900',
+    fontFamily: 'Inter_900Black',
     letterSpacing: 2,
   },
   spinner: {
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   status: {
     color: Theme.colors.textMuted,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     marginTop: 8,
   },
 });
