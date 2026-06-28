@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Theme, getRankDetails, RankTier } from '@/theme/theme';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Flame, Dumbbell, Trophy, ChevronRight, Zap, Award, Bell, Rocket } from 'lucide-react-native';
+import { Flame, Dumbbell, Trophy, ChevronRight, Zap, Award, Bell, Rocket, Check } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
@@ -25,6 +25,9 @@ export default function DashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [recentWorkouts, setRecentWorkouts] = useState<any[]>([]);
+  const [workedOutDays, setWorkedOutDays] = useState<number[]>([]);
+  const [showAnimation, setShowAnimation] = useState(false);
+  const [lastWorkoutCount, setLastWorkoutCount] = useState<number | null>(null);
 
   const loadData = async () => {
     try {
@@ -51,6 +54,32 @@ export default function DashboardScreen() {
       
       if (workoutError) throw workoutError;
       setRecentWorkouts(workoutData || []);
+
+      // Get week workouts to populate the streak calendar circles
+      const today = new Date();
+      const currentDayOfWeek = today.getDay();
+      
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - currentDayOfWeek);
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const endOfWeek = new Date(today);
+      endOfWeek.setDate(today.getDate() - currentDayOfWeek + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      const { data: weekWorkoutsData, error: weekWorkoutsError } = await supabase
+        .from('workouts')
+        .select('logged_at')
+        .eq('user_id', user.id)
+        .gte('logged_at', startOfWeek.toISOString())
+        .lte('logged_at', endOfWeek.toISOString());
+
+      if (weekWorkoutsError) throw weekWorkoutsError;
+
+      if (weekWorkoutsData) {
+        const days = weekWorkoutsData.map((w: any) => new Date(w.logged_at).getDate());
+        setWorkedOutDays([...new Set(days)]);
+      }
     } catch (err) {
       console.error('Error loading dashboard data:', err);
     } finally {
@@ -99,6 +128,27 @@ export default function DashboardScreen() {
     setRefreshing(true);
     loadData();
   };
+
+  useEffect(() => {
+    if (recentWorkouts.length === 0) return;
+
+    // Check if there is a workout logged today
+    const hasToday = recentWorkouts.some(workout => 
+      new Date(workout.logged_at).toDateString() === new Date().toDateString()
+    );
+
+    if (hasToday) {
+      if (lastWorkoutCount === null || recentWorkouts.length > lastWorkoutCount) {
+        setShowAnimation(true);
+        const timer = setTimeout(() => {
+          setShowAnimation(false);
+        }, 1000);
+        setLastWorkoutCount(recentWorkouts.length);
+        return () => clearTimeout(timer);
+      }
+    }
+    setLastWorkoutCount(recentWorkouts.length);
+  }, [recentWorkouts]);
 
   if (loading && !refreshing) {
     return (
@@ -215,23 +265,47 @@ export default function DashboardScreen() {
           <View style={styles.calendarContainer}>
             <Text style={styles.calendarMonthText}>{getMonthYearString()}</Text>
             <View style={styles.calendarDaysRow}>
-              {getWeekDays().map((day, idx) => (
-                <View key={idx} style={styles.calendarDayCol}>
-                  {day.isToday && <View style={styles.activeDayIndicatorBg} />}
-                  <Text style={[styles.dayNameText, day.isToday && styles.activeDayNameText]}>
-                    {day.dayName}
-                  </Text>
-                  <View style={[
-                    styles.dayCircle,
-                    day.isToday && styles.activeDayCircle,
-                    day.isToday && Theme.getGlow('#ddb7ff', 'medium')
-                  ]}>
-                    <Text style={[styles.dayNumText, day.isToday && styles.activeDayNumText]}>
-                      {day.dayNum}
+              {getWeekDays().map((day, idx) => {
+                const dayWorkedOut = workedOutDays.includes(day.dayNum);
+                const isToday = day.isToday;
+
+                return (
+                  <View key={idx} style={styles.calendarDayCol}>
+                    {isToday && <View style={styles.activeDayIndicatorBg} />}
+                    <Text style={[styles.dayNameText, isToday && styles.activeDayNameText]}>
+                      {day.dayName}
                     </Text>
+                    
+                    {dayWorkedOut ? (
+                      isToday && showAnimation ? (
+                        <View style={[
+                          styles.dayCircle,
+                          styles.greenTickCircle,
+                          Theme.getGlow('#10B981', 'medium')
+                        ]}>
+                          <Check size={18} color="#10B981" strokeWidth={3} />
+                        </View>
+                      ) : (
+                        <View style={[
+                          styles.dayCircle,
+                          styles.activeDayCircle,
+                          Theme.getGlow('#ddb7ff', 'medium')
+                        ]}>
+                          <Text style={[styles.dayNumText, styles.activeDayNumText]}>
+                            {day.dayNum}
+                          </Text>
+                        </View>
+                      )
+                    ) : (
+                      <View style={styles.dayCircle}>
+                        <Text style={styles.dayNumText}>
+                          {day.dayNum}
+                        </Text>
+                      </View>
+                    )}
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
           </View>
 
@@ -853,5 +927,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 0.5,
+  },
+  greenTickCircle: {
+    borderColor: '#10B981',
+    borderWidth: 2,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
   },
 });

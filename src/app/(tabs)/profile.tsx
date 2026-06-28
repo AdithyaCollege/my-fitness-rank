@@ -1249,17 +1249,13 @@ export default function ProfileScreen() {
 
   // ── Main Render ─────────────────────────────────────────────────────
   return (
-    <LinearGradient
-      colors={['#06060C', '#120A2B', '#1C123E']}
-      style={{ flex: 1 }}
-    >
+    <View style={{ flex: 1, backgroundColor: '#101415' }}>
       <LinearGradient
-        colors={['rgba(124, 58, 237, 0.78)', 'rgba(124, 58, 237, 0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.6, y: 0.6 }}
-        style={styles.ambientGlowTop}
+        colors={['rgba(73, 0, 128, 0.45)', '#101415']}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 0.6 }}
       />
-      <View style={styles.ambientGlowBottom} />
 
       <SafeAreaView style={styles.safeArea}>
       <FlatList
@@ -1293,7 +1289,7 @@ export default function ProfileScreen() {
       {renderEditModal()}
       {renderSingleEditModal()}
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -1304,7 +1300,7 @@ const styles = StyleSheet.create({
   // ── Layout ────────────────────────────────────────────────────
   loadingContainer: {
     flex: 1,
-    backgroundColor: Theme.colors.background,
+    backgroundColor: '#101415',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1341,10 +1337,10 @@ const styles = StyleSheet.create({
 
   // ── Section 1: Profile Card ───────────────────────────────────
   profileCard: {
-    backgroundColor: 'rgba(22, 15, 43, 0.4)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     padding: 24,
     alignItems: 'center',
     gap: 8,
@@ -1415,10 +1411,10 @@ const styles = StyleSheet.create({
   },
   physicalPill: {
     flex: 1,
-    backgroundColor: 'rgba(22, 15, 43, 0.4)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     paddingVertical: 12,
     paddingHorizontal: 6,
     alignItems: 'center',
@@ -1447,10 +1443,10 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   fitnessPill: {
-    backgroundColor: 'rgba(22, 15, 43, 0.4)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     paddingVertical: 10,
     paddingHorizontal: 16,
   },
@@ -1469,10 +1465,10 @@ const styles = StyleSheet.create({
   },
   statBox: {
     width: '48%' as any,
-    backgroundColor: 'rgba(22, 15, 43, 0.4)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     padding: 16,
     alignItems: 'center',
     gap: 4,
@@ -1520,10 +1516,10 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   workoutCard: {
-    backgroundColor: 'rgba(22, 15, 43, 0.5)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     padding: 16,
     gap: 6,
     marginBottom: 12,
@@ -1597,10 +1593,10 @@ const styles = StyleSheet.create({
 
   // ── Empty State ───────────────────────────────────────────────
   emptyContainer: {
-    backgroundColor: 'rgba(22, 15, 43, 0.4)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     padding: 40,
     alignItems: 'center',
     gap: 8,

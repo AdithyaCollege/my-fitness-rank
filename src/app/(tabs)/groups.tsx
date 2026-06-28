@@ -245,17 +245,13 @@ export default function GroupsScreen() {
 
   if (selectedSquad) {
     return (
-      <LinearGradient
-        colors={['#06060C', '#120A2B', '#1C123E']}
-        style={{ flex: 1 }}
-      >
+      <View style={{ flex: 1, backgroundColor: '#101415' }}>
         <LinearGradient
-          colors={['rgba(124, 58, 237, 0.78)', 'rgba(124, 58, 237, 0)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0.6, y: 0.6 }}
-          style={styles.ambientGlowTop}
+          colors={['rgba(73, 0, 128, 0.45)', '#101415']}
+          style={StyleSheet.absoluteFill}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 0.6 }}
         />
-        <View style={styles.ambientGlowBottom} />
 
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.header}>
@@ -328,27 +324,23 @@ export default function GroupsScreen() {
             </View>
           </ScrollView>
         </SafeAreaView>
-      </LinearGradient>
+      </View>
     );
   }
 
   // SQUADS LIST (Viewing all squads + create/join options)
   return (
-    <LinearGradient
-      colors={['#06060C', '#120A2B', '#1C123E']}
-      style={{ flex: 1 }}
-    >
+    <View style={{ flex: 1, backgroundColor: '#101415' }}>
       <LinearGradient
-        colors={['rgba(124, 58, 237, 0.78)', 'rgba(124, 58, 237, 0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.6, y: 0.6 }}
-        style={styles.ambientGlowTop}
+        colors={['rgba(73, 0, 128, 0.45)', '#101415']}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 0.6 }}
       />
-      <View style={styles.ambientGlowBottom} />
 
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <Users size={24} color={Theme.colors.primary} />
+          <Users size={24} color="#ddb7ff" />
           <Text style={styles.headerTitle}>YOUR SQUADS</Text>
         </View>
 
@@ -435,14 +427,14 @@ export default function GroupsScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: Theme.colors.background,
+    backgroundColor: '#101415',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -506,10 +498,10 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   emptyCard: {
-    backgroundColor: 'rgba(22, 15, 43, 0.4)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     padding: 30,
     alignItems: 'center',
     gap: 8,
@@ -533,10 +525,10 @@ const styles = StyleSheet.create({
   squadCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(22, 15, 43, 0.4)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     padding: 16,
     justifyContent: 'space-between',
     overflow: 'hidden',
@@ -555,10 +547,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
   },
   card: {
-    backgroundColor: 'rgba(22, 15, 43, 0.4)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     padding: 20,
     gap: 14,
     overflow: 'hidden',
@@ -669,10 +661,10 @@ const styles = StyleSheet.create({
   memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(22, 15, 43, 0.4)',
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 12,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+    borderRadius: 16,
     padding: 16,
     gap: 12,
     overflow: 'hidden',

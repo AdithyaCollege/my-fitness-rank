@@ -5,8 +5,11 @@ import { Home, BarChart2, Users, User } from 'lucide-react-native';
 import { Platform, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
@@ -23,23 +26,23 @@ export default function TabLayout() {
         tabBarStyle: {
           position: 'absolute',
           bottom: Platform.OS === 'ios' ? 24 : 16,
-          left: 16,
-          right: 16,
-          borderRadius: 24,
-          backgroundColor: 'rgba(16, 20, 21, 0.85)',
+          left: 20 + insets.left,
+          right: 20 + insets.right,
+          borderRadius: 28,
+          backgroundColor: 'rgba(12, 7, 20, 0.9)',
           borderTopWidth: 0,
           height: Platform.OS === 'ios' ? 88 : 72,
-          paddingBottom: Platform.OS === 'ios' ? 20 : 0,
-          paddingTop: Platform.OS === 'ios' ? 8 : 0,
+          paddingBottom: Platform.OS === 'ios' ? 20 : 6,
+          paddingTop: Platform.OS === 'ios' ? 8 : 6,
           elevation: 0,
           borderWidth: 1,
-          borderColor: 'rgba(207, 194, 214, 0.15)',
+          borderColor: 'rgba(255, 255, 255, 0.08)',
           overflow: 'hidden',
         },
         tabBarBackground: () => (
-          <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill}>
+          <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill}>
             <LinearGradient
-              colors={['rgba(255, 255, 255, 0.06)', 'rgba(255, 255, 255, 0.01)']}
+              colors={['rgba(255, 255, 255, 0.05)', 'rgba(255, 255, 255, 0.01)']}
               style={StyleSheet.absoluteFill}
             />
           </BlurView>

@@ -73,11 +73,11 @@ export default function LeaderboardScreen() {
         style={[
           styles.row,
           isCurrentUser && styles.currentUserRow,
-          isCurrentUser && Theme.getGlow(Theme.colors.primary, 'low'),
+          isCurrentUser && Theme.getGlow('#ddb7ff', 'low'),
         ]}
       >
         <LinearGradient
-          colors={['rgba(255, 255, 255, 0.07)', 'rgba(255, 255, 255, 0.01)']}
+          colors={['rgba(255, 255, 255, 0.04)', 'rgba(255, 255, 255, 0.01)']}
           style={StyleSheet.absoluteFill}
         />
         {/* Rank Number / Badge */}
@@ -93,7 +93,7 @@ export default function LeaderboardScreen() {
         <View style={styles.userCol}>
           <Text style={styles.avatarEmoji}>{item.avatar_url?.split(' ')[0] || '🦊'}</Text>
           <View>
-            <Text style={[styles.username, isCurrentUser && { color: Theme.colors.primary }]}>
+            <Text style={[styles.username, isCurrentUser && { color: '#ddb7ff' }]}>
               {item.username}
             </Text>
             <Text style={[styles.rankTier, { color: rankDetails.color }]}>
@@ -125,22 +125,18 @@ export default function LeaderboardScreen() {
   }
 
   return (
-    <LinearGradient
-      colors={['#06060C', '#120A2B', '#1C123E']}
-      style={{ flex: 1 }}
-    >
+    <View style={{ flex: 1, backgroundColor: '#101415' }}>
       <LinearGradient
-        colors={['rgba(124, 58, 237, 0.78)', 'rgba(124, 58, 237, 0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.6, y: 0.6 }}
-        style={styles.ambientGlowTop}
+        colors={['rgba(73, 0, 128, 0.45)', '#101415']}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 0.6 }}
       />
-      <View style={styles.ambientGlowBottom} />
 
       <SafeAreaView style={styles.safeArea}>
 
         <View style={styles.header}>
-          <Trophy size={20} color={Theme.colors.primary} />
+          <Trophy size={20} color="#ddb7ff" />
           <Text style={styles.headerTitle}>GLOBAL RANKINGS</Text>
         </View>
 
@@ -161,7 +157,7 @@ export default function LeaderboardScreen() {
           }
         />
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -215,10 +211,10 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(22, 15, 43, 0.5)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     paddingVertical: 12,
     paddingHorizontal: 16,
     gap: 12,
@@ -226,7 +222,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   currentUserRow: {
-    borderColor: Theme.colors.primary,
+    borderColor: '#ddb7ff',
     backgroundColor: 'rgba(124, 58, 237, 0.15)',
   },
   rankCol: {
@@ -279,7 +275,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     gap: 3,
     borderWidth: 0.5,
-    borderColor: Theme.colors.primary,
+    borderColor: '#ddb7ff',
   },
   streakText: {
     color: '#FFF',
@@ -296,10 +292,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
   },
   emptyContainer: {
-    backgroundColor: 'rgba(22, 15, 43, 0.4)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     padding: 40,
     alignItems: 'center',
     gap: 8,
