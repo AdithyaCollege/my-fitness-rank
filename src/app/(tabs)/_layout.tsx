@@ -1,8 +1,8 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Theme } from '@/theme/theme';
-import { LayoutDashboard, Trophy, Users, User } from 'lucide-react-native';
-import { Platform, View, Text, StyleSheet } from 'react-native';
+import { Home, BarChart2, Users, User } from 'lucide-react-native';
+import { Platform, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 
@@ -26,20 +26,20 @@ export default function TabLayout() {
           left: 16,
           right: 16,
           borderRadius: 24,
-          backgroundColor: 'rgba(14, 9, 30, 0.45)',
+          backgroundColor: 'rgba(16, 20, 21, 0.85)',
           borderTopWidth: 0,
           height: Platform.OS === 'ios' ? 88 : 72,
           paddingBottom: Platform.OS === 'ios' ? 20 : 0,
           paddingTop: Platform.OS === 'ios' ? 8 : 0,
           elevation: 0,
           borderWidth: 1,
-          borderColor: 'rgba(255, 255, 255, 0.12)',
+          borderColor: 'rgba(207, 194, 214, 0.15)',
           overflow: 'hidden',
         },
         tabBarBackground: () => (
-          <BlurView intensity={35} tint="dark" style={StyleSheet.absoluteFill}>
+          <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill}>
             <LinearGradient
-              colors={['rgba(255, 255, 255, 0.08)', 'rgba(255, 255, 255, 0.01)']}
+              colors={['rgba(255, 255, 255, 0.06)', 'rgba(255, 255, 255, 0.01)']}
               style={StyleSheet.absoluteFill}
             />
           </BlurView>
@@ -49,57 +49,97 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          tabBarIcon: ({ focused }) => (
-            <View style={[
-              styles.tabItem,
-              focused && styles.tabItemActive
-            ]}>
-              <LayoutDashboard size={20} color={focused ? '#FFF' : Theme.colors.textMuted} />
-              <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>Home</Text>
-            </View>
-          ),
+          tabBarButton: (props) => {
+            const selected = props.accessibilityState?.selected;
+            return (
+              <TouchableOpacity
+                onPress={props.onPress}
+                activeOpacity={0.7}
+                style={styles.tabButtonContainer}
+              >
+                <View style={[
+                  styles.tabItem,
+                  selected && styles.tabItemActive
+                ]}>
+                  <Home
+                    size={20}
+                    color={selected ? '#400071' : Theme.colors.textMuted}
+                    fill={selected ? '#400071' : 'none'}
+                  />
+                  <Text style={[styles.tabLabel, selected && styles.tabLabelActive]}>Home</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          }
         }}
       />
       <Tabs.Screen
         name="leaderboard"
         options={{
-          tabBarIcon: ({ focused }) => (
-            <View style={[
-              styles.tabItem,
-              focused && styles.tabItemActive
-            ]}>
-              <Trophy size={20} color={focused ? '#FFF' : Theme.colors.textMuted} />
-              <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>Rankings</Text>
-            </View>
-          ),
+          tabBarButton: (props) => {
+            const selected = props.accessibilityState?.selected;
+            return (
+              <TouchableOpacity
+                onPress={props.onPress}
+                activeOpacity={0.7}
+                style={styles.tabButtonContainer}
+              >
+                <View style={[
+                  styles.tabItem,
+                  selected && styles.tabItemActive
+                ]}>
+                  <BarChart2 size={20} color={selected ? '#400071' : Theme.colors.textMuted} />
+                  <Text style={[styles.tabLabel, selected && styles.tabLabelActive]}>Ranking</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          }
         }}
       />
       <Tabs.Screen
         name="groups"
         options={{
-          tabBarIcon: ({ focused }) => (
-            <View style={[
-              styles.tabItem,
-              focused && styles.tabItemActive
-            ]}>
-              <Users size={20} color={focused ? '#FFF' : Theme.colors.textMuted} />
-              <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>Squads</Text>
-            </View>
-          ),
+          tabBarButton: (props) => {
+            const selected = props.accessibilityState?.selected;
+            return (
+              <TouchableOpacity
+                onPress={props.onPress}
+                activeOpacity={0.7}
+                style={styles.tabButtonContainer}
+              >
+                <View style={[
+                  styles.tabItem,
+                  selected && styles.tabItemActive
+                ]}>
+                  <Users size={20} color={selected ? '#400071' : Theme.colors.textMuted} />
+                  <Text style={[styles.tabLabel, selected && styles.tabLabelActive]}>Squad</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          }
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          tabBarIcon: ({ focused }) => (
-            <View style={[
-              styles.tabItem,
-              focused && styles.tabItemActive
-            ]}>
-              <User size={20} color={focused ? '#FFF' : Theme.colors.textMuted} />
-              <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>Profile</Text>
-            </View>
-          ),
+          tabBarButton: (props) => {
+            const selected = props.accessibilityState?.selected;
+            return (
+              <TouchableOpacity
+                onPress={props.onPress}
+                activeOpacity={0.7}
+                style={styles.tabButtonContainer}
+              >
+                <View style={[
+                  styles.tabItem,
+                  selected && styles.tabItemActive
+                ]}>
+                  <User size={20} color={selected ? '#400071' : Theme.colors.textMuted} />
+                  <Text style={[styles.tabLabel, selected && styles.tabLabelActive]}>Profile</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          }
         }}
       />
     </Tabs>
@@ -107,18 +147,27 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
+  tabButtonContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
+  },
   tabItem: {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    height: 48,
-    borderRadius: 14,
-    paddingVertical: 4,
-    paddingHorizontal: 16,
+    gap: 2,
+    height: 60,
+    width: 60,
+    borderRadius: 30,
   },
   tabItemActive: {
-    backgroundColor: 'rgba(124, 58, 237, 0.25)', // Semi-transparent active purple pill
+    backgroundColor: '#ddb7ff',
+    shadowColor: '#ddb7ff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 15,
+    shadowOpacity: 0.45,
   },
   tabLabel: {
     color: Theme.colors.textMuted,
@@ -127,7 +176,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   tabLabelActive: {
-    color: '#FFF',
+    color: '#400071',
     fontFamily: 'Inter_800ExtraBold',
   },
 });

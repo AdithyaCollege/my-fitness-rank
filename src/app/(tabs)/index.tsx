@@ -7,14 +7,17 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
+  Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Theme, getRankDetails, RankTier } from '@/theme/theme';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Flame, Dumbbell, Trophy, ChevronRight, Zap, Award } from 'lucide-react-native';
+import { Flame, Dumbbell, Trophy, ChevronRight, Zap, Award, Bell, Rocket } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import { Image } from 'expo-image';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -63,7 +66,6 @@ export default function DashboardScreen() {
   );
 
   useEffect(() => {
-
     // Subscribe to realtime profile changes for current user
     let channel: any;
     async function subscribe() {
@@ -98,15 +100,10 @@ export default function DashboardScreen() {
     loadData();
   };
 
-  const handleLogout = async () => {
-    setLoading(true);
-    await supabase.auth.signOut();
-  };
-
   if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Theme.colors.primary} />
+        <ActivityIndicator size="large" color="#ddb7ff" />
       </View>
     );
   }
@@ -135,363 +132,505 @@ export default function DashboardScreen() {
     progressPercent = 100; // max rank
   }
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning ☀️';
-    if (hour < 17) return 'Good Afternoon 🌤';
-    return 'Good Evening 🌙';
+  // Helper to generate calendar days for current week
+  const getWeekDays = () => {
+    const today = new Date();
+    const currentDayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const week = [];
+    
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(today);
+      day.setDate(today.getDate() - currentDayOfWeek + i);
+      week.push({
+        dayName: ['S', 'M', 'T', 'W', 'T', 'F', 'S'][day.getDay()],
+        dayNum: day.getDate(),
+        isToday: day.toDateString() === today.toDateString(),
+      });
+    }
+    return week;
+  };
+
+  const getMonthYearString = () => {
+    const today = new Date();
+    return today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
+  };
+
+  const renderAvatar = () => {
+    const avatarUrl = profile?.avatar_url;
+    const isUrl = avatarUrl && (avatarUrl.startsWith('http') || avatarUrl.startsWith('https'));
+    if (isUrl) {
+      return (
+        <Image
+          source={{ uri: avatarUrl }}
+          style={styles.avatarImage}
+        />
+      );
+    }
+    return (
+      <Text style={styles.avatarEmojiText}>
+        {avatarUrl?.split(' ')[0] || '🦊'}
+      </Text>
+    );
   };
 
   return (
-    <LinearGradient
-      colors={['#06060C', '#120A2B', '#1C123E']}
-      style={{ flex: 1 }}
-    >
+    <View style={styles.rootContainer}>
+      {/* Background radial gradient color simulation */}
       <LinearGradient
-        colors={['rgba(124, 58, 237, 0.78)', 'rgba(124, 58, 237, 0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.6, y: 0.6 }}
-        style={styles.ambientGlowTop}
+        colors={['rgba(73, 0, 128, 0.45)', '#101415']}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 0.6 }}
       />
-      <View style={styles.ambientGlowBottom} />
 
       <SafeAreaView style={styles.safeArea}>
-
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.avatarEmoji}>{profile?.avatar_url?.split(' ')[0] || '🦊'}</Text>
-            <Text style={styles.greetingText}>{getGreeting()}</Text>
+        {/* Top AppBar */}
+        <View style={styles.topAppBar}>
+          <View style={styles.userInfo}>
+            <View style={styles.avatarWrapper}>
+              {renderAvatar()}
+            </View>
+            <Text style={styles.gamertagText}>{profile?.username || 'Gemini place Gamer Tag'}</Text>
           </View>
+          <TouchableOpacity
+            style={styles.notificationBtn}
+            activeOpacity={0.7}
+            onPress={() => Alert.alert('Notifications', 'You have no new notifications.')}
+          >
+            <Bell size={20} color="#e0e3e5" />
+          </TouchableOpacity>
         </View>
 
         <ScrollView
-          contentContainerStyle={styles.container}
+          contentContainerStyle={styles.scrollContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Theme.colors.primary} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#ddb7ff"
+            />
           }
         >
-          {/* Hey, User Header */}
-          <View style={styles.welcomeContainer}>
-            <Text style={styles.welcomeText}>Hey, {profile?.username || 'Gamer'}</Text>
-            <Text style={styles.welcomeSubtext}>Your AI is ready to optimize today</Text>
+          {/* Calendar Strip Section */}
+          <View style={styles.calendarContainer}>
+            <Text style={styles.calendarMonthText}>{getMonthYearString()}</Text>
+            <View style={styles.calendarDaysRow}>
+              {getWeekDays().map((day, idx) => (
+                <View key={idx} style={styles.calendarDayCol}>
+                  {day.isToday && <View style={styles.activeDayIndicatorBg} />}
+                  <Text style={[styles.dayNameText, day.isToday && styles.activeDayNameText]}>
+                    {day.dayName}
+                  </Text>
+                  <View style={[
+                    styles.dayCircle,
+                    day.isToday && styles.activeDayCircle,
+                    day.isToday && Theme.getGlow('#ddb7ff', 'medium')
+                  ]}>
+                    <Text style={[styles.dayNumText, day.isToday && styles.activeDayNumText]}>
+                      {day.dayNum}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
           </View>
 
+          {/* Hero Card */}
           <BlurView intensity={25} tint="dark" style={styles.heroCard}>
             <LinearGradient
-              colors={['rgba(255, 255, 255, 0.07)', 'rgba(255, 255, 255, 0.01)']}
+              colors={['rgba(255, 255, 255, 0.04)', 'rgba(255, 255, 255, 0.01)']}
               style={StyleSheet.absoluteFill}
             />
-            <View style={styles.heroRow}>
-              {/* XP and Rank Display */}
+            
+            <View style={styles.heroTopRow}>
               <View style={styles.xpCol}>
                 <Text style={styles.xpLabel}>TOTAL XP</Text>
-                <Text style={[
-                  styles.xpText,
-                  { color: '#FFF' },
-                  Theme.getGlow(rank.color, 'high'),
-                ]}>
-                  {profile?.total_xp ?? 0}
-                </Text>
+                <Text style={styles.xpValueText}>{profile?.total_xp ?? 165}</Text>
               </View>
-
-              {/* Streak Counter */}
-              <View style={styles.streakBox}>
-                <Flame size={26} color="#D8B4FE" fill="#D8B4FE" />
-                <View>
-                  <Text style={styles.streakCount}>{profile?.current_streak ?? 0}</Text>
-                  <Text style={styles.streakLabel}>STREAK</Text>
+              
+              <View style={styles.streakBadge}>
+                <Flame size={24} color="#ddb7ff" fill="#ddb7ff" />
+                <View style={styles.streakTextCol}>
+                  <Text style={styles.streakCountText}>{profile?.current_streak ?? 2}</Text>
+                  <Text style={styles.streakLabelText}>STREAK</Text>
                 </View>
               </View>
             </View>
 
-            {/* Progress Bar to next rank */}
-            <View style={styles.progressContainer}>
-              <View style={styles.progressLabels}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Award size={14} color={rank.color} />
-                  <Text style={[styles.progressTier, { color: rank.color }]}>{rank.name}</Text>
-                </View>
-                {nextRank ? (
-                  <Text style={styles.progressRemaining}>{xpRemaining} XP to {nextRankName}</Text>
-                ) : (
-                  <Text style={styles.progressRemaining}>MAX RANK REACHED</Text>
-                )}
+            <View style={styles.heroMiddleRow}>
+              <View style={styles.tierInfoBox}>
+                <Trophy size={16} color={rank.color} />
+                <Text style={[styles.tierNameText, { color: rank.color }]}>{rank.name}</Text>
               </View>
-              <View style={styles.progressBarBg}>
-                <LinearGradient
-                  colors={[rank.color, '#FFF']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[
-                    styles.progressBarFill,
-                    { width: `${progressPercent}%` },
-                    Theme.getGlow(rank.color, 'medium'),
-                  ]}
+              {nextRank ? (
+                <Text style={styles.xpRemainingText}>{xpRemaining} XP to {nextRankName}</Text>
+              ) : (
+                <Text style={styles.xpRemainingText}>MAX RANK REACHED</Text>
+              )}
+            </View>
+
+            <View style={styles.progressBarBg}>
+              <LinearGradient
+                colors={['#ddb7ff', '#842bd2']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[
+                  styles.progressBarFill,
+                  { width: `${progressPercent}%` }
+                ]}
+              />
+            </View>
+          </BlurView>
+
+          {/* Daily Challenge Card */}
+          <BlurView intensity={25} tint="dark" style={styles.challengeCard}>
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.04)', 'rgba(255, 255, 255, 0.01)']}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.challengeRow}>
+              <View style={styles.challengeLeft}>
+                <Text style={styles.challengeTitle}>Daily Challenge</Text>
+                <Text style={styles.challengeDesc}>
+                  Note: This is where there who be daily challenges to gain extra XP
+                </Text>
+                
+                <TouchableOpacity
+                  style={[styles.beginChallengeBtn, Theme.getGlow('#ddb7ff', 'medium')]}
+                  activeOpacity={0.8}
+                  onPress={() => Alert.alert('Daily Challenge', 'Challenge started! Log your next workout to unlock the bonus.')}
+                >
+                  <Rocket size={16} color="#400071" />
+                  <Text style={styles.beginChallengeBtnText}>Begin Challenge</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.mascotWrapper}>
+                <View style={styles.mascotGlowBg} />
+                <Image
+                  source={{ uri: 'https://lh3.googleusercontent.com/aida/AP1WRLvxCaUKl4C_TiomXV5bl991a2C30UejUj1wjaBfrjSLS8CYeVdDQCnkBwqDw4knrTFTA54RKcnugzDty0_4vKSaT_RJBCtWvA0mzIkXyoJZTZMlrMUyyNXXpzceRXhSqeoURyI4IPuY1Uplwiv0l8Iwxo0laX0W9EHpip27-pq5kwwhCaYErClaeST9-4zOB5JxH67-vBZMwhVqV_hOFZ-YIg7fogeovUSxQ80OgJ9EXEZr_Zhd7onaUg' }}
+                  style={styles.mascotImage}
                 />
               </View>
             </View>
           </BlurView>
 
-          {/* Quick actions */}
+          {/* Log New Workout Button */}
           <TouchableOpacity
-            style={[styles.logButton, Theme.getGlow(Theme.colors.primary, 'medium')]}
+            style={styles.logWorkoutBtn}
+            activeOpacity={0.7}
             onPress={() => router.push('/log-workout')}
           >
-            <Dumbbell size={20} color="#FFF" strokeWidth={2.5} />
-            <Text style={styles.logButtonText}>LOG NEW WORKOUT</Text>
-            <ChevronRight size={18} color="#FFF" strokeWidth={2.5} />
+            <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+            <View style={styles.logWorkoutLeft}>
+              <Dumbbell size={18} color="#ddb7ff" />
+              <Text style={styles.logWorkoutText}>LOG NEW WORKOUT</Text>
+            </View>
+            <ChevronRight size={18} color="#ddb7ff" />
           </TouchableOpacity>
 
-          {/* Stats Row */}
-          <View style={styles.statsRow}>
-            <BlurView intensity={25} tint="dark" style={styles.statCard}>
-              <LinearGradient
-                colors={['rgba(255, 255, 255, 0.07)', 'rgba(255, 255, 255, 0.01)']}
-                style={StyleSheet.absoluteFill}
-              />
-              <Trophy size={18} color={Theme.colors.warning} />
-              <Text style={styles.statValue}>{profile?.longest_streak ?? 0} Days</Text>
-              <Text style={styles.statLabel}>Best Streak</Text>
-            </BlurView>
-            <BlurView intensity={25} tint="dark" style={styles.statCard}>
-              <LinearGradient
-                colors={['rgba(255, 255, 255, 0.07)', 'rgba(255, 255, 255, 0.01)']}
-                style={StyleSheet.absoluteFill}
-              />
-              <Zap size={18} color={Theme.colors.secondary} />
-              <Text style={styles.statValue}>+{Math.round((Math.min(profile?.current_streak ?? 0, 10) * 5))}%</Text>
-              <Text style={styles.statLabel}>Streak Bonus</Text>
-            </BlurView>
-          </View>
-
-          {/* Recent Activity */}
+          {/* Daily Summary Section Header */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>DAILY SUMMARY</Text>
+            <Text style={styles.sectionTitle}>Daily Summary</Text>
+            <TouchableOpacity onPress={() => router.push('/profile')}>
+              <Text style={styles.viewAllText}>View all</Text>
+            </TouchableOpacity>
           </View>
 
+          {/* Summary List / Empty State */}
           {recentWorkouts.length === 0 ? (
-            <BlurView intensity={25} tint="dark" style={styles.emptyCard}>
-              <Dumbbell size={32} color={Theme.colors.textMuted} style={{ opacity: 0.5 }} />
-              <Text style={styles.emptyText}>No workouts logged yet.</Text>
-              <Text style={styles.emptySubtext}>Log a workout to start earning XP and ranking up!</Text>
-            </BlurView>
+            <View style={styles.fullEmptyContainer}>
+              <LinearGradient
+                colors={['rgba(221, 183, 255, 0.08)', 'rgba(221, 183, 255, 0.02)']}
+                style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+              />
+              <View style={styles.emptyIllustrationBox}>
+                <Dumbbell size={40} color="#ddb7ff" />
+              </View>
+              <Text style={styles.fullEmptyTitle}>Ready to Level Up?</Text>
+              <Text style={styles.fullEmptySubtext}>
+                You haven't logged any workouts yet. Tap below to record your first workout, earn 50 XP, and unlock your rank!
+              </Text>
+              <TouchableOpacity
+                style={[styles.fullEmptyLogButton, Theme.getGlow('#ddb7ff', 'medium')]}
+                onPress={() => router.push('/log-workout')}
+              >
+                <Dumbbell size={18} color="#400071" strokeWidth={2.5} />
+                <Text style={styles.fullEmptyLogButtonText}>LOG YOUR FIRST WORKOUT</Text>
+                <ChevronRight size={16} color="#400071" strokeWidth={2.5} />
+              </TouchableOpacity>
+            </View>
           ) : (
-            <View style={styles.workoutList}>
-              {recentWorkouts.map((workout) => (
-                <BlurView key={workout.id} intensity={25} tint="dark" style={styles.workoutCard}>
-                  <LinearGradient
-                    colors={['rgba(255, 255, 255, 0.07)', 'rgba(255, 255, 255, 0.01)']}
-                    style={StyleSheet.absoluteFill}
-                  />
-                  <View style={[
-                    styles.workoutIconBox, 
-                    {
-                      borderColor: workout.intensity === 'Intense' ? 'rgba(255, 42, 95, 0.3)' :
-                                   workout.intensity === 'Moderate' ? 'rgba(245, 158, 11, 0.3)' :
-                                   'rgba(16, 185, 129, 0.3)',
-                      backgroundColor: workout.intensity === 'Intense' ? 'rgba(255, 42, 95, 0.12)' :
-                                       workout.intensity === 'Moderate' ? 'rgba(245, 158, 11, 0.12)' :
-                                       'rgba(16, 185, 129, 0.12)',
-                    }
-                  ]}>
-                    <Dumbbell size={20} color={workout.intensity === 'Intense' ? Theme.colors.danger :
-                                              workout.intensity === 'Moderate' ? Theme.colors.warning :
-                                              Theme.colors.success} />
-                  </View>
-                  <View style={styles.workoutContent}>
-                    <Text style={styles.workoutName}>{workout.exercise_name || workout.type}</Text>
-                    <Text style={styles.workoutDesc} numberOfLines={1}>{workout.notes || 'Workout recorded successfully.'}</Text>
-                  </View>
-                  <View style={styles.workoutRight}>
-                    <View style={[
-                      styles.tagBadge, 
-                      { backgroundColor: workout.intensity === 'Intense' ? 'rgba(255, 42, 95, 0.15)' :
-                                         workout.intensity === 'Moderate' ? 'rgba(245, 158, 11, 0.15)' :
-                                         'rgba(16, 185, 129, 0.15)' }
-                    ]}>
-                      <Text style={[
-                        styles.tagBadgeText,
-                        { color: workout.intensity === 'Intense' ? Theme.colors.danger :
-                                 workout.intensity === 'Moderate' ? Theme.colors.warning :
-                                 Theme.colors.success }
-                      ]}>
-                        {workout.intensity === 'Intense' ? 'Hard' : workout.intensity === 'Moderate' ? 'Medium' : 'Light'}
+            <View style={styles.workoutListContainer}>
+              {recentWorkouts.map((workout, index) => {
+                // Map workout intensity/type to custom theme colors from the Stitch mockup
+                let iconBg = '#1d1238';
+                let iconColor = '#c084fc';
+                let badgeBg = '#2a1b4e';
+                let badgeText = '#c084fc';
+                let tag = 'Strength';
+                let IconComponent = Dumbbell;
+
+                if (workout.type.toLowerCase().includes('run') || workout.type.toLowerCase().includes('cardio') || workout.type.toLowerCase().includes('cycl')) {
+                  iconBg = '#361e12';
+                  iconColor = '#fb923c';
+                  badgeBg = '#4a2817';
+                  badgeText = '#fb923c';
+                  tag = 'Calories';
+                  IconComponent = Flame;
+                } else if (workout.intensity === 'Light') {
+                  iconBg = '#11261d';
+                  iconColor = '#4ade80';
+                  badgeBg = '#193628';
+                  badgeText = '#4ade80';
+                  tag = 'Recovery';
+                  IconComponent = Zap;
+                }
+
+                return (
+                  <BlurView key={workout.id || index} intensity={25} tint="dark" style={styles.summaryCard}>
+                    <LinearGradient
+                      colors={['rgba(255, 255, 255, 0.04)', 'rgba(255, 255, 255, 0.01)']}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    
+                    <View style={[styles.summaryIconBox, { backgroundColor: iconBg }]}>
+                      <IconComponent size={22} color={iconColor} />
+                    </View>
+
+                    <View style={styles.summaryContent}>
+                      <Text style={styles.summaryTitle} numberOfLines={1}>
+                        {workout.exercise_name || workout.type}
+                      </Text>
+                      <Text style={styles.summarySubtitle} numberOfLines={1}>
+                        {workout.notes || 'Workout recorded successfully.'}
                       </Text>
                     </View>
-                    <Text style={styles.workoutTime}>
-                      {new Date(workout.logged_at).toLocaleTimeString(undefined, {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </Text>
-                  </View>
-                </BlurView>
-              ))}
+
+                    <View style={styles.summaryRight}>
+                      <View style={[styles.summaryBadge, { backgroundColor: badgeBg }]}>
+                        <Text style={[styles.summaryBadgeText, { color: badgeText }]}>{tag}</Text>
+                      </View>
+                      <Text style={styles.summaryTime}>
+                        {new Date(workout.logged_at).toLocaleTimeString(undefined, {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </Text>
+                    </View>
+                  </BlurView>
+                );
+              })}
             </View>
           )}
         </ScrollView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  rootContainer: {
+    flex: 1,
+    backgroundColor: '#101415',
+  },
   loadingContainer: {
     flex: 1,
-    backgroundColor: Theme.colors.background,
+    backgroundColor: '#101415',
     justifyContent: 'center',
     alignItems: 'center',
   },
   safeArea: {
     flex: 1,
-    backgroundColor: 'transparent',
   },
-  ambientGlowTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: 400,
-  },
-  ambientGlowBottom: {
-    position: 'absolute',
-    bottom: -150,
-    left: -150,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: Theme.colors.accent,
-    opacity: 0.05,
-  },
-  container: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 40,
-    gap: 20,
-  },
-  header: {
+  topAppBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
-  headerLeft: {
+  userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  avatarEmoji: {
-    fontSize: 24,
-    backgroundColor: 'transparent',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    textAlign: 'center',
-    lineHeight: 40,
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
-  },
-  greetingText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  logoutButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  avatarWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Theme.colors.card,
     borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(207, 194, 214, 0.3)',
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
   },
-  welcomeContainer: {
-    gap: 4,
-    marginBottom: 4,
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
-  welcomeText: {
-    color: '#FFF',
-    fontSize: 28,
-    fontFamily: 'Inter_900Black',
-    letterSpacing: -0.5,
+  avatarEmojiText: {
+    fontSize: 22,
+    textAlign: 'center',
   },
-  welcomeSubtext: {
-    color: Theme.colors.textMuted,
-    fontSize: 14,
-    fontFamily: 'Inter_400Regular',
+  gamertagText: {
+    color: '#e0e3e5',
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
   },
-  heroCard: {
-    backgroundColor: 'rgba(22, 15, 43, 0.45)',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: 'rgba(124, 58, 237, 0.28)',
-    padding: 20,
-    gap: 20,
-    overflow: 'hidden',
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-  },
-  heroRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  notificationBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
   },
-  xpCol: {
-    gap: 4,
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 110,
+    gap: 20,
   },
-  xpLabel: {
-    color: Theme.colors.textMuted,
+  calendarContainer: {
+    paddingHorizontal: 4,
+    gap: 12,
+  },
+  calendarMonthText: {
+    color: '#cfc2d6',
     fontSize: 11,
     fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1,
   },
-  xpText: {
-    fontSize: 34,
+  calendarDaysRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  calendarDayCol: {
+    alignItems: 'center',
+    gap: 8,
+    position: 'relative',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  activeDayIndicatorBg: {
+    position: 'absolute',
+    top: -4,
+    bottom: -4,
+    left: -4,
+    right: -4,
+    backgroundColor: 'rgba(39, 42, 44, 0.45)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+  },
+  dayNameText: {
+    color: '#cfc2d6',
+    fontSize: 11,
+    fontFamily: 'Inter_800ExtraBold',
+  },
+  activeDayNameText: {
+    color: '#e0e3e5',
+  },
+  dayCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  activeDayCircle: {
+    borderColor: '#ddb7ff',
+    borderWidth: 2,
+    backgroundColor: 'rgba(16, 20, 21, 0.5)',
+  },
+  dayNumText: {
+    color: '#e0e3e5',
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  activeDayNumText: {
+    fontFamily: 'Inter_800ExtraBold',
+  },
+  heroCard: {
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+    padding: 20,
+    gap: 16,
+    overflow: 'hidden',
+  },
+  heroTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  xpCol: {
+    gap: 2,
+  },
+  xpLabel: {
+    color: 'rgba(224, 227, 229, 0.7)',
+    fontSize: 11,
+    fontFamily: 'Inter_800ExtraBold',
+    letterSpacing: 1,
+  },
+  xpValueText: {
+    color: '#e0e3e5',
+    fontSize: 36,
     fontFamily: 'Inter_900Black',
   },
-  streakBox: {
+  streakBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(124, 58, 237, 0.18)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(124, 58, 237, 0.5)',
-    borderRadius: 12,
-    paddingVertical: 8,
+    backgroundColor: 'rgba(221, 183, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(221, 183, 255, 0.3)',
+    borderRadius: 16,
+    paddingVertical: 10,
     paddingHorizontal: 14,
-    gap: 8,
+    gap: 10,
   },
-  streakCount: {
-    color: '#FFF',
-    fontSize: 22,
+  streakTextCol: {
+    gap: 2,
+  },
+  streakCountText: {
+    color: '#e0e3e5',
+    fontSize: 20,
     fontFamily: 'Inter_900Black',
-    lineHeight: 22,
+    lineHeight: 20,
   },
-  streakLabel: {
-    color: Theme.colors.textMuted,
+  streakLabelText: {
+    color: 'rgba(224, 227, 229, 0.7)',
     fontSize: 9,
     fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1,
   },
-  progressContainer: {
-    gap: 8,
-  },
-  progressLabels: {
+  heroMiddleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  progressTier: {
-    fontSize: 13,
-    fontFamily: 'Inter_800ExtraBold',
-    letterSpacing: 0.5,
+  tierInfoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  progressRemaining: {
-    color: Theme.colors.textMuted,
-    fontSize: 11,
+  tierNameText: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+  },
+  xpRemainingText: {
+    color: 'rgba(224, 227, 229, 0.7)',
+    fontSize: 12,
     fontFamily: 'Inter_600SemiBold',
   },
   progressBarBg: {
@@ -504,143 +643,215 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 4,
   },
-  logButton: {
-    height: 56,
-    backgroundColor: Theme.colors.primary,
-    borderRadius: 12,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    gap: 12,
+  challengeCard: {
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+    padding: 20,
+    overflow: 'hidden',
   },
-  logButtonText: {
-    flex: 1,
-    color: '#FFF',
-    fontSize: 15,
-    fontFamily: 'Inter_900Black',
-    letterSpacing: 1,
-  },
-  statsRow: {
+  challengeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     gap: 16,
   },
-  statCard: {
+  challengeLeft: {
     flex: 1,
-    backgroundColor: 'rgba(22, 15, 43, 0.45)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(124, 58, 237, 0.22)',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    gap: 4,
-    overflow: 'hidden',
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
+    gap: 10,
   },
-  statValue: {
-    color: '#FFF',
+  challengeTitle: {
+    color: '#ddb7ff',
     fontSize: 18,
     fontFamily: 'Inter_800ExtraBold',
-    marginTop: 2,
   },
-  statLabel: {
-    color: Theme.colors.textMuted,
-    fontSize: 11,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  sectionHeader: {
-    marginTop: 10,
-    paddingBottom: 4,
-  },
-  sectionTitle: {
-    color: '#FFF',
+  challengeDesc: {
+    color: '#cfc2d6',
     fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 18,
+  },
+  beginChallengeBtn: {
+    height: 40,
+    backgroundColor: '#ddb7ff',
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    gap: 8,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  beginChallengeBtnText: {
+    color: '#400071',
+    fontSize: 12,
+    fontFamily: 'Inter_700Bold',
+  },
+  mascotWrapper: {
+    width: 100,
+    height: 100,
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mascotGlowBg: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(221, 183, 255, 0.25)',
+  },
+  mascotImage: {
+    width: '100%',
+    height: '100%',
+  },
+  logWorkoutBtn: {
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+  },
+  logWorkoutLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  logWorkoutText: {
+    color: '#ddb7ff',
+    fontSize: 12,
     fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1,
   },
-  emptyCard: {
-    backgroundColor: 'rgba(22, 15, 43, 0.45)',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: 'rgba(124, 58, 237, 0.22)',
-    padding: 30,
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
-    overflow: 'hidden',
+    paddingHorizontal: 4,
+    marginTop: 8,
   },
-  emptyText: {
-    color: '#FFF',
-    fontSize: 15,
-    fontFamily: 'Inter_700Bold',
+  sectionTitle: {
+    color: '#e0e3e5',
+    fontSize: 18,
+    fontFamily: 'Inter_800ExtraBold',
   },
-  emptySubtext: {
-    color: Theme.colors.textMuted,
-    fontSize: 12,
-    fontFamily: 'Inter_400Regular',
-    textAlign: 'center',
-    lineHeight: 18,
+  viewAllText: {
+    color: '#ddb7ff',
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
   },
-  workoutList: {
+  workoutListContainer: {
     gap: 12,
   },
-  workoutCard: {
-    backgroundColor: 'rgba(22, 15, 43, 0.45)',
+  summaryCard: {
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
     borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: 'rgba(124, 58, 237, 0.22)',
-    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
     overflow: 'hidden',
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
   },
-  workoutIconBox: {
+  summaryIconBox: {
     width: 48,
     height: 48,
-    borderRadius: 12,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    marginRight: 14,
   },
-  workoutContent: {
+  summaryContent: {
     flex: 1,
     gap: 4,
   },
-  workoutName: {
-    color: '#FFF',
+  summaryTitle: {
+    color: '#e0e3e5',
     fontSize: 15,
     fontFamily: 'Inter_700Bold',
   },
-  workoutDesc: {
-    color: Theme.colors.textMuted,
+  summarySubtitle: {
+    color: '#cfc2d6',
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
   },
-  workoutRight: {
+  summaryRight: {
     alignItems: 'flex-end',
     gap: 6,
   },
-  tagBadge: {
+  summaryBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 12,
   },
-  tagBadgeText: {
+  summaryBadgeText: {
     fontSize: 9,
     fontFamily: 'Inter_800ExtraBold',
     textTransform: 'uppercase',
   },
-  workoutTime: {
-    color: Theme.colors.textMuted,
+  summaryTime: {
+    color: '#cfc2d6',
     fontSize: 10,
     fontFamily: 'Inter_600SemiBold',
+  },
+  fullEmptyContainer: {
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(221, 183, 255, 0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    overflow: 'hidden',
+    position: 'relative',
+    marginVertical: 10,
+  },
+  emptyIllustrationBox: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: 'rgba(221, 183, 255, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(221, 183, 255, 0.3)',
+  },
+  fullEmptyTitle: {
+    color: '#FFF',
+    fontSize: 20,
+    fontFamily: 'Inter_800ExtraBold',
+    textAlign: 'center',
+  },
+  fullEmptySubtext: {
+    color: '#cfc2d6',
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 12,
+  },
+  fullEmptyLogButton: {
+    height: 50,
+    backgroundColor: '#ddb7ff',
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    gap: 10,
+    width: '100%',
+    marginTop: 8,
+  },
+  fullEmptyLogButtonText: {
+    color: '#400071',
+    fontSize: 13,
+    fontFamily: 'Inter_800ExtraBold',
+    letterSpacing: 0.5,
   },
 });

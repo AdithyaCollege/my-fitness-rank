@@ -501,7 +501,8 @@ const styles = StyleSheet.create({
   },
   container: {
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingTop: 20,
+    paddingBottom: 110,
     gap: 20,
   },
   emptyCard: {

@@ -1332,7 +1332,7 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 40,
+    paddingBottom: 110,
   },
   headerContainer: {
     gap: 16,
@@ -1718,22 +1718,30 @@ const styles = StyleSheet.create({
   // ── Single Edit Modal Styles ──
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(5, 7, 12, 0.85)',
-    justifyContent: 'center',
+    backgroundColor: 'rgba(5, 7, 12, 0.75)',
+    justifyContent: 'flex-end',
     alignItems: 'center',
   },
   modalCenteringContainer: {
-    width: '90%',
-    maxWidth: 380,
-    justifyContent: 'center',
+    width: '100%',
+    justifyContent: 'flex-end',
   },
   singleEditCard: {
     backgroundColor: '#0E091B',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
-    padding: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    borderWidth: 1.5,
+    borderBottomWidth: 0,
+    borderColor: 'rgba(124, 58, 237, 0.28)',
+    padding: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
     gap: 16,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
   },
   singleEditHeader: {
     flexDirection: 'row',
