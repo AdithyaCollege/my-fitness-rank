@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
@@ -49,6 +50,7 @@ export default function LogWorkoutScreen() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [recentWorkouts, setRecentWorkouts] = useState<any[]>([]);
 
   // Search States
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,8 +72,29 @@ export default function LogWorkoutScreen() {
     { id: 1, weight: '', reps: '' }
   ]);
 
+  const loadRecentWorkouts = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const { data, error } = await supabase
+          .from('workouts')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('created_at', today.toISOString())
+          .order('created_at', { ascending: false });
+        if (!error && data) {
+          setRecentWorkouts(data);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching recent workouts:', err);
+    }
+  };
+
   useEffect(() => {
-    async function getProfile() {
+    async function init() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase
@@ -80,10 +103,23 @@ export default function LogWorkoutScreen() {
           .eq('id', user.id)
           .single();
         setProfile(data);
+        
+        // Load recent workouts logged today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const { data: wrks } = await supabase
+          .from('workouts')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('created_at', today.toISOString())
+          .order('created_at', { ascending: false });
+        if (wrks) {
+          setRecentWorkouts(wrks);
+        }
       }
       setLoading(false);
     }
-    getProfile();
+    init();
   }, []);
 
   // Filter exercises based on query
@@ -116,13 +152,22 @@ export default function LogWorkoutScreen() {
     setSets(sets.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
+  const resetForm = () => {
+    setSelectedExercise(null);
+    setHours('');
+    setMinutes('');
+    setSeconds('');
+    setSets([{ id: 1, weight: '', reps: '' }]);
+    setIntensity('Moderate');
+    setNotes('');
+  };
+
   // Live XP Preview logic
   const calculateLiveXp = () => {
     const base = 10;
     const selectedIntensity = INTENSITIES.find(i => i.name === intensity);
     const mult = selectedIntensity?.mult ?? 1.0;
     
-    // Check streak
     let streak = profile?.current_streak ?? 0;
     const lastWorkout = profile?.last_workout_date;
     
@@ -153,7 +198,6 @@ export default function LogWorkoutScreen() {
         const s = parseFloat(seconds) || 0;
         durationMin = (h * 60) + m + (s / 60);
       } else {
-        // strength / other: 3 minutes per set
         durationMin = sets.length * 3;
       }
     }
@@ -162,7 +206,6 @@ export default function LogWorkoutScreen() {
     
     let xp = 0;
     if (selectedExercise && !isCardio) {
-      // Calculate XP based on sets, weights, reps
       let strengthXp = 0;
       sets.forEach(s => {
         const weight = parseFloat(s.weight) || 0;
@@ -171,7 +214,6 @@ export default function LogWorkoutScreen() {
       });
       xp = Math.round(strengthXp * streakMult);
     } else {
-      // Cardio / fallback duration based XP
       xp = Math.round((base + (durationMin * mult)) * streakMult);
     }
     
@@ -197,7 +239,6 @@ export default function LogWorkoutScreen() {
 
       const workoutType = mapCategoryToType(selectedExercise.category);
 
-      // Format sets/reps as JSON payload for strength exercises
       let setsRepsData = null;
       if (workoutType !== 'Cardio' && sets.length > 0) {
         setsRepsData = sets
@@ -224,7 +265,9 @@ export default function LogWorkoutScreen() {
 
       if (error) throw error;
 
-      router.back();
+      Alert.alert('Workout Registered!', 'You gained +' + xpPreview.xp + ' XP! Log another one or close to go home.');
+      await loadRecentWorkouts();
+      resetForm();
     } catch (err: any) {
       console.error('Error logging workout:', err);
       Alert.alert('Save Failed', err.message || 'Could not log workout. Please try again.');
@@ -238,7 +281,7 @@ export default function LogWorkoutScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Theme.colors.primary} />
+        <ActivityIndicator size="large" color="#ddb7ff" />
       </View>
     );
   }
@@ -246,50 +289,45 @@ export default function LogWorkoutScreen() {
   const isCardio = selectedExercise && mapCategoryToType(selectedExercise.category) === 'Cardio';
 
   return (
-    <LinearGradient
-      colors={['#06060C', '#120A2B', '#1C123E']}
-      style={{ flex: 1 }}
-    >
+    <View style={{ flex: 1, backgroundColor: '#101415' }}>
       <LinearGradient
-        colors={['rgba(124, 58, 237, 0.78)', 'rgba(124, 58, 237, 0)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.6, y: 0.6 }}
-        style={styles.ambientGlowTop}
+        colors={['rgba(73, 0, 128, 0.45)', '#101415']}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 0.6 }}
       />
-      <View style={styles.ambientGlowBottom} />
 
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        {/* Header bar */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>LOG WORKOUT</Text>
-          <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
-            <X size={20} color="#FFF" />
-          </TouchableOpacity>
-        </View>
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          {/* Header bar */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>LOG WORKOUT</Text>
+            <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
+              <X size={20} color="#FFF" />
+            </TouchableOpacity>
+          </View>
 
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          
-          {/* 1. Search Selection Area */}
-          {!selectedExercise ? (
+          <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+            
+            {/* 1. Search Selection Area */}
             <View style={styles.searchSection}>
               <Text style={styles.label}>FIND YOUR EXERCISE</Text>
               <View style={styles.searchBar}>
-                <Search size={18} color={Theme.colors.textMuted} style={styles.searchIcon} />
+                <Search size={18} color="#cfc2d6" style={styles.searchIcon} />
                 <TextInput
                   style={styles.searchInput}
                   placeholder="e.g. Bench Press, Squat, Running..."
-                  placeholderTextColor={Theme.colors.textMuted + '80'}
+                  placeholderTextColor="rgba(207, 194, 214, 0.5)"
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   autoCorrect={false}
                 />
                 {searchQuery.length > 0 && (
                   <TouchableOpacity onPress={() => setSearchQuery('')}>
-                    <X size={18} color={Theme.colors.textMuted} />
+                    <X size={18} color="#cfc2d6" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -346,252 +384,283 @@ export default function LogWorkoutScreen() {
                 </View>
               )}
             </View>
-          ) : (
-            /* Selected Exercise & Setup Form */
-            <View style={styles.formSection}>
+
+            {/* 2. Recent Workouts Logged Today Section */}
+            <View style={styles.recentSection}>
+              <Text style={styles.label}>RECENT WORKOUTS LOGGED TODAY</Text>
+              {recentWorkouts.length > 0 ? (
+                <View style={styles.recentList}>
+                  {recentWorkouts.map((workout) => (
+                    <View key={workout.id} style={styles.recentCard}>
+                      <View style={styles.recentHeader}>
+                        <Text style={styles.recentName}>{workout.exercise_name}</Text>
+                        <Text style={styles.recentType}>{workout.type.toUpperCase()}</Text>
+                      </View>
+                      <View style={styles.recentMeta}>
+                        <Text style={styles.recentMetaText}>⏱️ {workout.duration_min} mins</Text>
+                        {workout.sets_reps && workout.sets_reps.length > 0 && (
+                          <Text style={styles.recentMetaText}>• {workout.sets_reps.length} sets</Text>
+                        )}
+                        {workout.intensity && (
+                          <Text style={styles.recentMetaText}>• {workout.intensity}</Text>
+                        )}
+                      </View>
+                      {workout.notes && (
+                        <Text style={styles.recentNotes} numberOfLines={2}>
+                          "{workout.notes}"
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.recentEmptyCard}>
+                  <Text style={styles.recentEmptyText}>No workouts logged yet today.</Text>
+                  <Text style={styles.recentEmptySub}>Your activity log will appear here in real-time as you complete them!</Text>
+                </View>
+              )}
+            </View>
+
+          </ScrollView>
+
+          {/* 3. Smooth Overlay Modal for Selected Exercise Logging */}
+          <Modal
+            visible={selectedExercise !== null}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={resetForm}
+          >
+            <View style={styles.modalOverlay}>
+              <TouchableOpacity 
+                style={styles.backdrop} 
+                activeOpacity={1} 
+                onPress={resetForm} 
+              />
               
-              {/* Change Selected Exercise Card */}
-              <View style={styles.selectedExerciseCard}>
-                <View style={styles.selectedHeader}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalGrabber} />
+                
+                <View style={styles.modalHeader}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.selectedType}>
-                      {mapCategoryToType(selectedExercise.category).toUpperCase()}
+                      {selectedExercise ? mapCategoryToType(selectedExercise.category).toUpperCase() : ''}
                     </Text>
-                    <Text style={styles.selectedName}>{selectedExercise.name}</Text>
+                    <Text style={styles.modalTitle} numberOfLines={2}>
+                      {selectedExercise ? selectedExercise.name : ''}
+                    </Text>
                   </View>
-                  <TouchableOpacity
-                    style={styles.changeExerciseBtn}
-                    onPress={() => {
-                      setSelectedExercise(null);
-                      setHours('');
-                      setMinutes('');
-                      setSeconds('');
-                      setSets([{ id: 1, weight: '', reps: '' }]);
-                    }}
-                  >
-                    <Text style={styles.changeExerciseText}>CHANGE</Text>
+                  <TouchableOpacity style={styles.modalCloseBtn} onPress={resetForm}>
+                    <X size={20} color="#FFF" />
                   </TouchableOpacity>
                 </View>
 
-                {selectedExercise.primaryMuscles && selectedExercise.primaryMuscles.length > 0 && (
-                  <Text style={styles.selectedMuscle}>
-                    Activated Muscle: <Text style={{ color: Theme.colors.primary, fontWeight: '700' }}>
-                      {selectedExercise.primaryMuscles.join(', ')}
-                    </Text>
-                  </Text>
-                )}
+                {selectedExercise && (
+                  <ScrollView 
+                    contentContainerStyle={styles.modalFormScroll} 
+                    keyboardShouldPersistTaps="handled"
+                  >
+                    {/* Active muscle indicators & dynamic images */}
+                    {selectedExercise.primaryMuscles && selectedExercise.primaryMuscles.length > 0 && (
+                      <Text style={styles.selectedMuscle}>
+                        Activated Muscle: <Text style={{ color: '#ddb7ff', fontWeight: '700' }}>
+                          {selectedExercise.primaryMuscles.join(', ')}
+                        </Text>
+                      </Text>
+                    )}
 
-                {selectedExercise.images && selectedExercise.images.length > 0 ? (
-                  <View style={styles.imageContainer}>
-                    <Image
-                      source={{ uri: `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${selectedExercise.images[0]}` }}
-                      style={styles.exerciseImage}
-                      contentFit="contain"
-                      onLoadStart={() => setImageLoading(true)}
-                      onLoadEnd={() => setImageLoading(false)}
-                    />
-                    {imageLoading && (
-                      <View style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#070C15' }]}>
-                        <ActivityIndicator color={Theme.colors.primary} />
+                    {selectedExercise.images && selectedExercise.images.length > 0 ? (
+                      <View style={styles.imageContainer}>
+                        <Image
+                          source={{ uri: `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${selectedExercise.images[0]}` }}
+                          style={styles.exerciseImage}
+                          contentFit="contain"
+                          onLoadStart={() => setImageLoading(true)}
+                          onLoadEnd={() => setImageLoading(false)}
+                        />
+                        {imageLoading && (
+                          <View style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#16191a' }]}>
+                            <ActivityIndicator color="#ddb7ff" />
+                          </View>
+                        )}
+                      </View>
+                    ) : null}
+
+                    {/* XP Preview Card */}
+                    <View style={[styles.xpPreviewCard, Theme.getGlow('#ddb7ff', 'low')]}>
+                      <Text style={styles.xpPreviewTitle}>ESTIMATED REWARD</Text>
+                      <View style={styles.xpRow}>
+                        <Text style={styles.xpNumber}>{xpPreview.xp}</Text>
+                        <Text style={styles.xpSub}>XP</Text>
+                      </View>
+                      <Text style={styles.xpStreakBonus}>
+                        {xpPreview.durationMin} mins total duration • includes +{xpPreview.streakBonus}% Streak Bonus
+                      </Text>
+                    </View>
+
+                    {/* Duration Input (Cardio Only) */}
+                    {isCardio ? (
+                      <View style={styles.card}>
+                        <Text style={styles.label}>DURATION TIME</Text>
+                        <View style={styles.timeInputsRow}>
+                          <View style={styles.timeField}>
+                            <Text style={styles.timeLabel}>Hours</Text>
+                            <TextInput
+                              style={styles.timeInput}
+                              placeholder="0"
+                              placeholderTextColor="rgba(207, 194, 214, 0.4)"
+                              value={hours}
+                              onChangeText={(v) => setHours(v.replace(/[^0-9]/g, ''))}
+                              keyboardType="numeric"
+                              maxLength={2}
+                            />
+                          </View>
+                          <Text style={styles.timeDivider}>:</Text>
+                          <View style={styles.timeField}>
+                            <Text style={styles.timeLabel}>Mins</Text>
+                            <TextInput
+                              style={styles.timeInput}
+                              placeholder="30"
+                              placeholderTextColor="rgba(207, 194, 214, 0.4)"
+                              value={minutes}
+                              onChangeText={(v) => setMinutes(v.replace(/[^0-9]/g, ''))}
+                              keyboardType="numeric"
+                              maxLength={2}
+                            />
+                          </View>
+                          <Text style={styles.timeDivider}>:</Text>
+                          <View style={styles.timeField}>
+                            <Text style={styles.timeLabel}>Secs</Text>
+                            <TextInput
+                              style={styles.timeInput}
+                              placeholder="00"
+                              placeholderTextColor="rgba(207, 194, 214, 0.4)"
+                              value={seconds}
+                              onChangeText={(v) => setSeconds(v.replace(/[^0-9]/g, ''))}
+                              keyboardType="numeric"
+                              maxLength={2}
+                            />
+                          </View>
+                        </View>
+                      </View>
+                    ) : (
+                      /* Sets & Reps Input (Strength Only) */
+                      <View style={styles.card}>
+                        <View style={styles.setsHeader}>
+                          <Text style={styles.label}>SETS & REPS</Text>
+                          <TouchableOpacity style={styles.addSetBtn} onPress={addSet}>
+                            <Plus size={16} color="#ddb7ff" />
+                            <Text style={styles.addSetBtnText}>ADD SET</Text>
+                          </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.setsList}>
+                          {sets.map((set, index) => (
+                            <View key={set.id} style={styles.setRow}>
+                              <Text style={styles.setNumber}>SET {index + 1}</Text>
+                              
+                              <TextInput
+                                style={styles.setInput}
+                                placeholder="Weight (lbs/kg)"
+                                placeholderTextColor="rgba(207, 194, 214, 0.5)"
+                                keyboardType="numeric"
+                                value={set.weight}
+                                onChangeText={(val) => updateSet(set.id, 'weight', val)}
+                              />
+                              
+                              <TextInput
+                                style={styles.setInput}
+                                placeholder="Reps"
+                                placeholderTextColor="rgba(207, 194, 214, 0.5)"
+                                keyboardType="numeric"
+                                value={set.reps}
+                                onChangeText={(val) => updateSet(set.id, 'reps', val)}
+                              />
+
+                              <TouchableOpacity
+                                onPress={() => removeSet(set.id)}
+                                disabled={sets.length === 1}
+                                style={{ opacity: sets.length === 1 ? 0.3 : 1 }}
+                              >
+                                <Trash2 size={16} color="#FF2A5F" />
+                              </TouchableOpacity>
+                            </View>
+                          ))}
+                        </View>
                       </View>
                     )}
-                  </View>
-                ) : null}
-              </View>
 
-              {/* XP Preview Card */}
-              <View style={[styles.xpPreviewCard, Theme.getGlow(Theme.colors.primary, 'low')]}>
-                <Text style={styles.xpPreviewTitle}>ESTIMATED REWARD</Text>
-                <View style={styles.xpRow}>
-                  <Text style={styles.xpNumber}>{xpPreview.xp}</Text>
-                  <Text style={styles.xpSub}>XP</Text>
-                </View>
-                <Text style={styles.xpStreakBonus}>
-                  {xpPreview.durationMin} mins total duration • includes +{xpPreview.streakBonus}% Streak Bonus
-                </Text>
-              </View>
-
-              {/* ── Duration Fields (Cardio Only) ── */}
-              {isCardio ? (
-                <View style={styles.card}>
-                  <Text style={styles.label}>DURATION TIME</Text>
-                  <View style={styles.timeInputsRow}>
-                    <View style={styles.timeField}>
-                      <Text style={styles.timeLabel}>Hours</Text>
-                      <TextInput
-                        style={styles.timeInput}
-                        placeholder="0"
-                        placeholderTextColor={Theme.colors.textMuted + '60'}
-                        value={hours}
-                        onChangeText={(v) => setHours(v.replace(/[^0-9]/g, ''))}
-                        keyboardType="numeric"
-                        maxLength={2}
-                      />
-                    </View>
-                    <Text style={styles.timeDivider}>:</Text>
-                    <View style={styles.timeField}>
-                      <Text style={styles.timeLabel}>Mins</Text>
-                      <TextInput
-                        style={styles.timeInput}
-                        placeholder="30"
-                        placeholderTextColor={Theme.colors.textMuted + '60'}
-                        value={minutes}
-                        onChangeText={(v) => setMinutes(v.replace(/[^0-9]/g, ''))}
-                        keyboardType="numeric"
-                        maxLength={2}
-                      />
-                    </View>
-                    <Text style={styles.timeDivider}>:</Text>
-                    <View style={styles.timeField}>
-                      <Text style={styles.timeLabel}>Secs</Text>
-                      <TextInput
-                        style={styles.timeInput}
-                        placeholder="00"
-                        placeholderTextColor={Theme.colors.textMuted + '60'}
-                        value={seconds}
-                        onChangeText={(v) => setSeconds(v.replace(/[^0-9]/g, ''))}
-                        keyboardType="numeric"
-                        maxLength={2}
-                      />
-                    </View>
-                  </View>
-                </View>
-              ) : (
-                /* ── Sets & Reps Fields (Strength Only) ── */
-                <View style={styles.card}>
-                  <View style={styles.setsHeader}>
-                    <Text style={styles.label}>SETS & REPS</Text>
-                    <TouchableOpacity style={styles.addSetBtn} onPress={addSet}>
-                      <Plus size={16} color={Theme.colors.primary} />
-                      <Text style={styles.addSetBtnText}>ADD SET</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.setsList}>
-                    {sets.map((set, index) => (
-                      <View key={set.id} style={styles.setRow}>
-                        <Text style={styles.setNumber}>SET {index + 1}</Text>
-                        
-                        <TextInput
-                          style={styles.setInput}
-                          placeholder="Weight (lbs/kg)"
-                          placeholderTextColor={Theme.colors.textMuted + '80'}
-                          keyboardType="numeric"
-                          value={set.weight}
-                          onChangeText={(val) => updateSet(set.id, 'weight', val)}
-                        />
-                        
-                        <TextInput
-                          style={styles.setInput}
-                          placeholder="Reps"
-                          placeholderTextColor={Theme.colors.textMuted + '80'}
-                          keyboardType="numeric"
-                          value={set.reps}
-                          onChangeText={(val) => updateSet(set.id, 'reps', val)}
-                        />
-
-                        <TouchableOpacity
-                          onPress={() => removeSet(set.id)}
-                          disabled={sets.length === 1}
-                          style={{ opacity: sets.length === 1 ? 0.3 : 1 }}
-                        >
-                          <Trash2 size={16} color={Theme.colors.danger} />
-                        </TouchableOpacity>
+                    {/* Intensity */}
+                    <View style={styles.card}>
+                      <Text style={styles.label}>INTENSITY MULTIPLIER</Text>
+                      <View style={styles.intensityList}>
+                        {INTENSITIES.map((item) => (
+                          <TouchableOpacity
+                            key={item.name}
+                            style={[
+                              styles.intensityCell,
+                              intensity === item.name && { borderColor: '#ddb7ff' }
+                            ]}
+                            onPress={() => setIntensity(item.name)}
+                          >
+                            <View style={styles.intensityCellHeader}>
+                              <Text style={[styles.intensityName, intensity === item.name && { color: '#ddb7ff' }]}>
+                                {item.name}
+                              </Text>
+                              <Text style={styles.intensityMult}>{item.mult}x XP</Text>
+                            </View>
+                            <Text style={styles.intensityDesc}>{item.desc}</Text>
+                          </TouchableOpacity>
+                        ))}
                       </View>
-                    ))}
-                  </View>
-                </View>
-              )}
+                    </View>
 
-              {/* Intensity */}
-              <View style={styles.card}>
-                <Text style={styles.label}>INTENSITY MULTIPLIER</Text>
-                <View style={styles.intensityList}>
-                  {INTENSITIES.map((item) => (
+                    {/* Notes */}
+                    <View style={styles.card}>
+                      <Text style={styles.label}>NOTES & LOG DETAILS</Text>
+                      <TextInput
+                        style={styles.notesInput}
+                        placeholder="How did you feel? Focus points..."
+                        placeholderTextColor="#8A82A0"
+                        multiline
+                        numberOfLines={3}
+                        value={notes}
+                        onChangeText={setNotes}
+                      />
+                    </View>
+
+                    {/* Save Button */}
                     <TouchableOpacity
-                      key={item.name}
-                      style={[
-                        styles.intensityCell,
-                        intensity === item.name && { borderColor: Theme.colors.secondary }
-                      ]}
-                      onPress={() => setIntensity(item.name)}
+                      style={[styles.saveButton, Theme.getGlow('#ddb7ff', 'medium'), saving && { opacity: 0.6 }]}
+                      onPress={handleSaveWorkout}
+                      disabled={saving}
                     >
-                      <View style={styles.intensityCellHeader}>
-                        <Text style={[styles.intensityName, intensity === item.name && { color: Theme.colors.secondary }]}>
-                          {item.name}
-                        </Text>
-                        <Text style={styles.intensityMult}>{item.mult}x XP</Text>
-                      </View>
-                      <Text style={styles.intensityDesc}>{item.desc}</Text>
+                      {saving ? (
+                        <ActivityIndicator color="#400071" />
+                      ) : (
+                        <Text style={styles.saveButtonText}>SAVE & SUBMIT TO SQUAD</Text>
+                      )}
                     </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              {/* Notes */}
-              <View style={styles.card}>
-                <Text style={styles.label}>NOTES & LOG DETAILS</Text>
-                <TextInput
-                  style={styles.notesInput}
-                  placeholder="How did you feel? Focus points..."
-                  placeholderTextColor={Theme.colors.textMuted}
-                  multiline
-                  numberOfLines={3}
-                  value={notes}
-                  onChangeText={setNotes}
-                />
-              </View>
-
-              {/* Save Button */}
-              <TouchableOpacity
-                style={[styles.saveButton, Theme.getGlow(Theme.colors.primary, 'medium'), saving && { opacity: 0.6 }]}
-                onPress={handleSaveWorkout}
-                disabled={saving}
-              >
-                {saving ? (
-                  <ActivityIndicator color="#000" />
-                ) : (
-                  <Text style={styles.saveButtonText}>SAVE & SUBMIT TO SQUAD</Text>
+                  </ScrollView>
                 )}
-              </TouchableOpacity>
-
+              </View>
             </View>
-          )}
-
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-    </LinearGradient>
+          </Modal>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: Theme.colors.background,
+    backgroundColor: '#101415',
     justifyContent: 'center',
     alignItems: 'center',
   },
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
-  },
-  ambientGlowTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: 400,
-  },
-  ambientGlowBottom: {
-    position: 'absolute',
-    bottom: -150,
-    left: -150,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: Theme.colors.accent,
-    opacity: 0.05,
   },
   header: {
     flexDirection: 'row',
@@ -610,16 +679,16 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Theme.colors.card,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   container: {
     paddingHorizontal: 20,
-    paddingVertical: 20,
-    gap: 20,
+    paddingVertical: 12,
+    gap: 24,
   },
   searchSection: {
     gap: 12,
@@ -627,10 +696,10 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(22, 15, 43, 0.4)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     paddingHorizontal: 16,
     height: 52,
     gap: 12,
@@ -645,16 +714,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
   },
   resultsList: {
-    backgroundColor: '#0E091B',
-    borderRadius: 16,
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     overflow: 'hidden',
   },
   resultItem: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Theme.colors.border,
+    borderBottomColor: 'rgba(207, 194, 214, 0.1)',
     gap: 4,
   },
   resultHeader: {
@@ -670,22 +739,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   resultCategory: {
-    color: Theme.colors.primary,
+    color: '#ddb7ff',
     fontSize: 9,
     fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1,
-    backgroundColor: 'rgba(124, 58, 237, 0.15)',
+    backgroundColor: 'rgba(221, 183, 255, 0.15)',
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 4,
   },
   resultMuscle: {
-    color: Theme.colors.textMuted,
+    color: '#cfc2d6',
     fontSize: 12,
     fontFamily: 'Inter_500Medium',
   },
   emptyResultsText: {
-    color: Theme.colors.textMuted,
+    color: '#cfc2d6',
     textAlign: 'center',
     padding: 24,
     fontFamily: 'Inter_600SemiBold',
@@ -700,10 +769,10 @@ const styles = StyleSheet.create({
   },
   quickChip: {
     width: '48%',
-    backgroundColor: 'rgba(22, 15, 43, 0.4)',
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
     borderWidth: 1,
-    borderColor: Theme.colors.border,
-    borderRadius: 12,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+    borderRadius: 16,
     padding: 12,
     gap: 4,
   },
@@ -713,83 +782,173 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_700Bold',
   },
   quickChipSub: {
-    color: Theme.colors.primary,
+    color: '#ddb7ff',
     fontSize: 10,
     fontFamily: 'Inter_800ExtraBold',
   },
-  formSection: {
-    gap: 20,
-  },
-  selectedExerciseCard: {
-    backgroundColor: 'rgba(22, 15, 43, 0.4)',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: Theme.colors.primary,
-    padding: 16,
+  recentSection: {
     gap: 12,
+    marginBottom: 20,
   },
-  selectedHeader: {
+  recentList: {
+    gap: 10,
+  },
+  recentCard: {
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+    borderRadius: 16,
+    padding: 16,
+    gap: 8,
+  },
+  recentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 12,
+    alignItems: 'center',
   },
-  selectedType: {
-    color: Theme.colors.primary,
+  recentName: {
+    color: '#FFF',
+    fontSize: 15,
+    fontFamily: 'Inter_700Bold',
+    flex: 1,
+  },
+  recentType: {
+    color: '#ddb7ff',
     fontSize: 10,
-    fontFamily: 'Inter_900Black',
+    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1,
   },
-  selectedName: {
+  recentMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  recentMetaText: {
+    color: '#cfc2d6',
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  recentNotes: {
+    color: '#cfc2d6',
+    fontSize: 12,
+    fontStyle: 'italic',
+    fontFamily: 'Inter_400Regular',
+    marginTop: 2,
+  },
+  recentEmptyCard: {
+    backgroundColor: 'rgba(45, 49, 51, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(207, 194, 214, 0.08)',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    gap: 6,
+  },
+  recentEmptyText: {
     color: '#FFF',
-    fontSize: 18,
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+  },
+  recentEmptySub: {
+    color: '#cfc2d6',
+    fontSize: 11,
+    fontFamily: 'Inter_400Regular',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  
+  // Modal Sheet styling
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(5, 7, 12, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    flex: 1,
+  },
+  modalContent: {
+    backgroundColor: '#16191a',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+    maxHeight: '88%',
+    overflow: 'hidden',
+  },
+  modalGrabber: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignSelf: 'center',
+    marginTop: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(207, 194, 214, 0.1)',
+  },
+  selectedType: {
+    color: '#ddb7ff',
+    fontSize: 9,
     fontFamily: 'Inter_900Black',
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  modalTitle: {
+    color: '#FFF',
+    fontSize: 16,
+    fontFamily: 'Inter_800ExtraBold',
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+  modalFormScroll: {
+    padding: 24,
+    paddingBottom: 50,
+    gap: 20,
   },
   selectedMuscle: {
-    color: Theme.colors.textMuted,
+    color: '#cfc2d6',
     fontSize: 13,
     fontFamily: 'Inter_600SemiBold',
   },
-  changeExerciseBtn: {
-    backgroundColor: '#06060C',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
-  },
-  changeExerciseText: {
-    color: '#FFF',
-    fontSize: 10,
-    fontFamily: 'Inter_800ExtraBold',
-    letterSpacing: 0.5,
-  },
   imageContainer: {
     width: '100%',
-    height: 200,
-    backgroundColor: '#06060C',
-    borderRadius: 12,
+    height: 180,
+    backgroundColor: 'rgba(45, 49, 51, 0.2)',
+    borderRadius: 16,
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(207, 194, 214, 0.1)',
   },
   exerciseImage: {
     width: '90%',
     height: '90%',
   },
   xpPreviewCard: {
-    backgroundColor: 'rgba(124, 58, 237, 0.15)',
-    borderColor: Theme.colors.primary,
+    backgroundColor: 'rgba(124, 58, 237, 0.1)',
+    borderColor: 'rgba(221, 183, 255, 0.3)',
     borderWidth: 1.5,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 20,
     alignItems: 'center',
     gap: 8,
   },
   xpPreviewTitle: {
-    color: Theme.colors.primary,
+    color: '#ddb7ff',
     fontSize: 11,
     fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1.5,
@@ -806,7 +965,7 @@ const styles = StyleSheet.create({
     lineHeight: 48,
   },
   xpSub: {
-    color: Theme.colors.primary,
+    color: '#ddb7ff',
     fontSize: 18,
     fontFamily: 'Inter_800ExtraBold',
     paddingBottom: 4,
@@ -818,15 +977,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   card: {
-    backgroundColor: 'rgba(22, 15, 43, 0.4)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     padding: 20,
     gap: 12,
   },
   label: {
-    color: Theme.colors.textMuted,
+    color: '#cfc2d6',
     fontSize: 11,
     fontFamily: 'Inter_800ExtraBold',
     letterSpacing: 1,
@@ -843,15 +1002,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   timeLabel: {
-    color: Theme.colors.textMuted,
+    color: '#cfc2d6',
     fontSize: 9,
     fontFamily: 'Inter_700Bold',
   },
   timeInput: {
-    backgroundColor: '#06060C',
-    borderColor: Theme.colors.border,
+    backgroundColor: 'rgba(45, 49, 51, 0.5)',
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     borderWidth: 1.5,
-    borderRadius: 8,
+    borderRadius: 12,
     color: '#FFF',
     fontSize: 20,
     fontFamily: 'Inter_800ExtraBold',
@@ -860,7 +1019,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   timeDivider: {
-    color: Theme.colors.border,
+    color: 'rgba(207, 194, 214, 0.15)',
     fontSize: 24,
     fontFamily: 'Inter_700Bold',
     marginTop: 18,
@@ -876,7 +1035,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   addSetBtnText: {
-    color: Theme.colors.primary,
+    color: '#ddb7ff',
     fontSize: 11,
     fontFamily: 'Inter_800ExtraBold',
   },
@@ -896,10 +1055,10 @@ const styles = StyleSheet.create({
   },
   setInput: {
     flex: 1,
-    backgroundColor: '#06060C',
-    borderColor: Theme.colors.border,
+    backgroundColor: 'rgba(45, 49, 51, 0.5)',
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     color: '#FFF',
     height: 40,
     paddingHorizontal: 12,
@@ -910,10 +1069,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   intensityCell: {
-    backgroundColor: 'rgba(22, 15, 43, 0.2)',
-    borderColor: Theme.colors.border,
+    backgroundColor: 'rgba(45, 49, 51, 0.2)',
+    borderColor: 'rgba(207, 194, 214, 0.12)',
     borderWidth: 1.5,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 12,
     gap: 4,
   },
@@ -928,20 +1087,20 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_800ExtraBold',
   },
   intensityMult: {
-    color: Theme.colors.textMuted,
+    color: '#cfc2d6',
     fontSize: 11,
     fontFamily: 'Inter_700Bold',
   },
   intensityDesc: {
-    color: Theme.colors.textMuted,
+    color: '#cfc2d6',
     fontSize: 11,
     fontFamily: 'Inter_500Medium',
   },
   notesInput: {
-    backgroundColor: '#06060C',
-    borderColor: Theme.colors.border,
+    backgroundColor: 'rgba(45, 49, 51, 0.5)',
+    borderColor: 'rgba(207, 194, 214, 0.15)',
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 12,
     color: '#FFF',
     padding: 12,
     fontSize: 14,
@@ -949,14 +1108,14 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   saveButton: {
-    backgroundColor: Theme.colors.primary,
-    borderRadius: 12,
+    backgroundColor: '#ddb7ff',
+    borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   saveButtonText: {
-    color: '#FFF',
+    color: '#400071',
     fontSize: 15,
     fontFamily: 'Inter_900Black',
     letterSpacing: 1,

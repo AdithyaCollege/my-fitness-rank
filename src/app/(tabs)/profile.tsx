@@ -13,6 +13,7 @@ import {
   Modal,
   TextInput,
   Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
@@ -32,6 +33,13 @@ import {
   Ruler,
   Weight,
   User,
+  BookOpen,
+  Gamepad2,
+  MessageCircle,
+  FileText,
+  Shield,
+  ChevronRight,
+  ArrowUpRight,
 } from 'lucide-react-native';
 
 // ── Emoji Maps ──────────────────────────────────────────────────────────
@@ -577,33 +585,102 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* ─── Section 6: Action Buttons ─── */}
-      <View style={styles.actionsRow}>
+      {/* ─── Section 6: Edit Profile Button ─── */}
+      <View style={styles.editProfileWrapper}>
         <TouchableOpacity
-          style={[styles.actionBtn, { borderColor: Theme.colors.primary }]}
+          style={[styles.editProfileBtn, Theme.getGlow('#ddb7ff', 'low')]}
           onPress={openEditModal}
           activeOpacity={0.7}
         >
-          <Pencil size={16} color={Theme.colors.primary} />
-          <Text style={[styles.actionBtnText, { color: Theme.colors.primary }]}>
-            Edit Profile
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionBtn, { borderColor: Theme.colors.danger }]}
-          onPress={handleSignOut}
-          activeOpacity={0.7}
-        >
-          <LogOut size={16} color={Theme.colors.danger} />
-          <Text style={[styles.actionBtnText, { color: Theme.colors.danger }]}>
-            Sign Out
-          </Text>
+          <Pencil size={16} color="#400071" strokeWidth={2.5} />
+          <Text style={styles.editProfileBtnText}>EDIT PHYSICAL STATS</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Section 5 header */}
-      <Text style={styles.historyTitle}>WORKOUT LOG HISTORY</Text>
+      {/* ─── Section 7: Other Settings Menu List ─── */}
+      <Text style={styles.menuGroupTitle}>OTHER</Text>
+      <View style={styles.menuGroupCard}>
+        <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+        
+        {/* Help articles */}
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          activeOpacity={0.7}
+          onPress={() => Alert.alert('Help Articles', 'Visit support.gymrank.app for guides and support, or contact support@gymrank.app.')}
+        >
+          <View style={styles.menuItemLeft}>
+            <BookOpen size={20} color="#cfc2d6" />
+            <Text style={styles.menuItemText}>Help articles</Text>
+          </View>
+          <ArrowUpRight size={18} color="#cfc2d6" />
+        </TouchableOpacity>
+
+        {/* Join Discord */}
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          activeOpacity={0.7}
+          onPress={() => Alert.alert('Discord Server', 'Join our community on Discord to meet other athletes, share tips, and compete! Discord invite link: discord.gg/gymrank')}
+        >
+          <View style={styles.menuItemLeft}>
+            <Gamepad2 size={20} color="#cfc2d6" />
+            <Text style={styles.menuItemText}>Join Discord</Text>
+          </View>
+          <ArrowUpRight size={18} color="#cfc2d6" />
+        </TouchableOpacity>
+
+        {/* Leave feedback */}
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          activeOpacity={0.7}
+          onPress={() => Alert.alert('Leave Feedback', 'We would love to hear from you! Send us your ideas, feature requests, or bug reports to feedback@gymrank.app.')}
+        >
+          <View style={styles.menuItemLeft}>
+            <MessageCircle size={20} color="#cfc2d6" />
+            <Text style={styles.menuItemText}>Leave feedback</Text>
+          </View>
+          <ChevronRight size={18} color="#cfc2d6" />
+        </TouchableOpacity>
+
+        {/* Terms of service */}
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          activeOpacity={0.7}
+          onPress={() => Alert.alert('Terms of Service', 'By using GymRank, you agree to follow our code of conduct, log workouts honestly, and maintain a friendly attitude inside squads.')}
+        >
+          <View style={styles.menuItemLeft}>
+            <FileText size={20} color="#cfc2d6" />
+            <Text style={styles.menuItemText}>Terms of service</Text>
+          </View>
+          <ChevronRight size={18} color="#cfc2d6" />
+        </TouchableOpacity>
+
+        {/* Privacy policy */}
+        <TouchableOpacity 
+          style={[styles.menuItem, { borderBottomWidth: 0 }]} 
+          activeOpacity={0.7}
+          onPress={() => Alert.alert('Privacy Policy', 'GymRank respects your privacy. We store your workout details and username securely and never share them with third parties.')}
+        >
+          <View style={styles.menuItemLeft}>
+            <Shield size={20} color="#cfc2d6" />
+            <Text style={styles.menuItemText}>Privacy policy</Text>
+          </View>
+          <ChevronRight size={18} color="#cfc2d6" />
+        </TouchableOpacity>
+      </View>
+
+      {/* ─── Section 8: Separate Log Out Card ─── */}
+      <TouchableOpacity 
+        style={styles.logoutCard} 
+        activeOpacity={0.7}
+        onPress={handleSignOut}
+      >
+        <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+        <View style={styles.menuItemLeft}>
+          <LogOut size={20} color="#FF2A5F" />
+          <Text style={[styles.menuItemText, { color: '#FF2A5F' }]}>Log out</Text>
+        </View>
+        <ChevronRight size={18} color="#FF2A5F" />
+      </TouchableOpacity>
     </View>
   );
 
@@ -1258,11 +1335,7 @@ export default function ProfileScreen() {
       />
 
       <SafeAreaView style={styles.safeArea}>
-      <FlatList
-        data={workouts}
-        renderItem={renderWorkoutItem}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={renderHeader}
+      <ScrollView
         contentContainerStyle={styles.listContainer}
         refreshControl={
           <RefreshControl
@@ -1271,20 +1344,9 @@ export default function ProfileScreen() {
             tintColor={Theme.colors.primary}
           />
         }
-        ListEmptyComponent={
-          <BlurView intensity={25} tint="dark" style={styles.emptyContainer}>
-            <Dumbbell
-              size={28}
-              color={Theme.colors.textMuted}
-              style={{ opacity: 0.5 }}
-            />
-            <Text style={styles.emptyText}>No workout logs.</Text>
-            <Text style={styles.emptySubtext}>
-              Your fitness journey starts when you log your first activity!
-            </Text>
-          </BlurView>
-        }
-      />
+      >
+        {renderHeader()}
+      </ScrollView>
 
       {renderEditModal()}
       {renderSingleEditModal()}
@@ -1485,23 +1547,72 @@ const styles = StyleSheet.create({
   },
 
   // ── Section 6: Actions ────────────────────────────────────────
-  actionsRow: {
-    flexDirection: 'row',
-    gap: 12,
+  // ── Section 6: Actions & Settings Menu ────────────────────────
+  editProfileWrapper: {
+    width: '100%',
   },
-  actionBtn: {
-    flex: 1,
+  editProfileBtn: {
+    height: 50,
+    backgroundColor: '#ddb7ff',
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderWidth: 1.5,
-    borderRadius: 12,
-    paddingVertical: 14,
   },
-  actionBtnText: {
+  editProfileBtnText: {
+    color: '#400071',
+    fontSize: 13,
+    fontFamily: 'Inter_800ExtraBold',
+    letterSpacing: 0.5,
+  },
+  menuGroupTitle: {
+    color: '#cfc2d6',
+    fontSize: 11,
+    fontFamily: 'Inter_800ExtraBold',
+    letterSpacing: 1.5,
+    marginTop: 10,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  menuGroupCard: {
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+    overflow: 'hidden',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(207, 194, 214, 0.08)',
+  },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  menuItemText: {
+    color: '#FFF',
     fontSize: 14,
     fontFamily: 'Inter_700Bold',
+  },
+  logoutCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    marginTop: 12,
+    overflow: 'hidden',
   },
 
   // ── Section 5: Workout History ────────────────────────────────

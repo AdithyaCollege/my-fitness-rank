@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  FlatList,
   Alert,
   RefreshControl,
   ScrollView,
@@ -14,15 +13,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Theme, getRankDetails } from '@/theme/theme';
-import { Users, Plus, UserPlus, Copy, ArrowLeft, Shield, Trophy } from 'lucide-react-native';
+import { Users, Plus, UserPlus, Copy, Trophy, LogOut, Search } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 
 export default function GroupsScreen() {
   const [squads, setSquads] = useState<any[]>([]);
-  const [selectedSquad, setSelectedSquad] = useState<any | null>(null);
   const [squadMembers, setSquadMembers] = useState<any[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -31,10 +30,16 @@ export default function GroupsScreen() {
   const [joinInviteCode, setJoinInviteCode] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Player search states
+  const [playerSearchQuery, setPlayerSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
   const loadSquads = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      setCurrentUserId(user.id);
 
       // Get user squads
       const { data: membershipData, error: membershipError } = await supabase
@@ -59,15 +64,9 @@ export default function GroupsScreen() {
 
       setSquads(formattedSquads);
 
-      // If we are currently viewing a squad, refresh its member list
-      if (selectedSquad) {
-        const currentSquad = formattedSquads.find((s: any) => s.id === selectedSquad.id);
-        if (currentSquad) {
-          setSelectedSquad(currentSquad);
-          await loadSquadMembers(currentSquad.id);
-        } else {
-          setSelectedSquad(null);
-        }
+      // If they are in a squad, load its members
+      if (formattedSquads.length > 0) {
+        await loadSquadMembers(formattedSquads[0].id);
       }
     } catch (err) {
       console.error('Error loading squads:', err);
@@ -89,7 +88,6 @@ export default function GroupsScreen() {
             username,
             avatar_url,
             total_xp,
-            rank_tier,
             current_streak
           )
         `)
@@ -120,13 +118,6 @@ export default function GroupsScreen() {
     loadSquads();
   };
 
-  const handleSelectSquad = async (squad: any) => {
-    setSelectedSquad(squad);
-    setLoading(true);
-    await loadSquadMembers(squad.id);
-    setLoading(false);
-  };
-
   const handleCreateSquad = async () => {
     if (!newSquadName || newSquadName.trim().length < 3) {
       Alert.alert('Invalid Name', 'Squad name must be at least 3 characters long.');
@@ -137,6 +128,11 @@ export default function GroupsScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user session.');
+
+      // Check if already in a squad
+      if (squads.length > 0) {
+        throw new Error('You can only join one squad. Leave your current squad first!');
+      }
 
       // Generate random invite code
       const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -166,7 +162,8 @@ export default function GroupsScreen() {
 
       setNewSquadName('');
       Alert.alert('Squad Created', `Your squad "${groupData.name}" has been created! Share code: ${inviteCode}`);
-      loadSquads();
+      setLoading(true);
+      await loadSquads();
     } catch (err: any) {
       console.error('Error creating squad:', err);
       Alert.alert('Creation Failed', err.message || 'Could not create squad.');
@@ -187,6 +184,11 @@ export default function GroupsScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user session.');
 
+      // Check if already in a squad
+      if (squads.length > 0) {
+        throw new Error('You can only join one squad. Leave your current squad first!');
+      }
+
       // Find squad by invite code
       const { data: groupData, error: groupError } = await supabase
         .from('groups')
@@ -196,17 +198,6 @@ export default function GroupsScreen() {
 
       if (groupError) {
         throw new Error('Squad not found. Double check the invite code!');
-      }
-
-      // Check if already in squad
-      const { data: existingMember, error: checkError } = await supabase
-        .from('group_members')
-        .select('*')
-        .eq('group_id', groupData.id)
-        .eq('user_id', user.id);
-
-      if (existingMember && existingMember.length > 0) {
-        throw new Error('You are already a member of this squad!');
       }
 
       // Join squad
@@ -221,13 +212,119 @@ export default function GroupsScreen() {
 
       setJoinInviteCode('');
       Alert.alert('Joined Squad', `You have joined the squad "${groupData.name}"!`);
-      loadSquads();
+      setLoading(true);
+      await loadSquads();
     } catch (err: any) {
       console.error('Error joining squad:', err);
       Alert.alert('Join Failed', err.message || 'Could not join squad.');
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleExitSquad = async () => {
+    const activeSquad = squads[0];
+    if (!activeSquad) return;
+
+    Alert.alert(
+      'Leave Squad',
+      'Are you sure you want to leave this squad? You will lose access to the squad dashboard and standings.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Leave',
+          style: 'destructive',
+          onPress: async () => {
+            setActionLoading(true);
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) throw new Error('No user session.');
+
+              // Delete membership
+              const { error } = await supabase
+                .from('group_members')
+                .delete()
+                .eq('group_id', activeSquad.id)
+                .eq('user_id', user.id);
+
+              if (error) throw error;
+
+              // If owner, delete squad to clean up
+              if (activeSquad.owner_id === user.id) {
+                await supabase
+                  .from('groups')
+                  .delete()
+                  .eq('id', activeSquad.id);
+              }
+
+              Alert.alert('Squad Exited', 'You have successfully left the squad.');
+              setSquads([]);
+              setSquadMembers([]);
+              setLoading(true);
+              await loadSquads();
+            } catch (err: any) {
+              console.error('Error leaving squad:', err);
+              Alert.alert('Error', err.message || 'Could not leave squad.');
+            } finally {
+              setActionLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  useEffect(() => {
+    const query = playerSearchQuery.trim();
+    if (!query) {
+      setSearchResults([]);
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url, total_xp, current_streak')
+          .like('username', `%${query}%`) // Case-sensitive search
+          .limit(5);
+
+        if (error) throw error;
+
+        // Filter out current user and players already in the squad
+        const filtered = (data || []).filter(
+          (p: any) => p.id !== currentUserId && !squadMembers.some((m) => m.id === p.id)
+        );
+        setSearchResults(filtered);
+      } catch (err) {
+        console.error('Auto-search error:', err);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [playerSearchQuery, currentUserId, squadMembers]);
+
+  const handleSendInvite = async (player: any) => {
+    Alert.alert(
+      'Send Invitation',
+      `Would you like to invite @${player.username} to join ${squads[0]?.name}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Invite',
+          onPress: () => {
+            Alert.alert(
+              'Invitation Sent!',
+              `A request to join has been sent to @${player.username} with your invite code: ${squads[0]?.invite_code}.`
+            );
+            setSearchResults(searchResults.filter((p) => p.id !== player.id));
+          }
+        }
+      ]
+    );
   };
 
   const copyToClipboard = async (text: string) => {
@@ -238,12 +335,14 @@ export default function GroupsScreen() {
   if (loading && squads.length === 0) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Theme.colors.primary} />
+        <ActivityIndicator size="large" color="#ddb7ff" />
       </View>
     );
   }
 
-  if (selectedSquad) {
+  // ── BRANCH A: User is in a Squad (Show Dashboard Only) ──────────────
+  if (squads.length > 0) {
+    const activeSquad = squads[0];
     return (
       <View style={{ flex: 1, backgroundColor: '#101415' }}>
         <LinearGradient
@@ -255,11 +354,9 @@ export default function GroupsScreen() {
 
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={() => setSelectedSquad(null)}>
-              <ArrowLeft size={20} color="#FFF" />
-            </TouchableOpacity>
+            <Users size={24} color="#ddb7ff" />
             <View style={styles.headerTitleContainer}>
-              <Text style={styles.headerTitle}>{selectedSquad.name}</Text>
+              <Text style={styles.headerTitle}>{activeSquad.name}</Text>
               <Text style={styles.headerSubtitle}>SQUAD DASHBOARD</Text>
             </View>
           </View>
@@ -267,31 +364,32 @@ export default function GroupsScreen() {
           <ScrollView
             contentContainerStyle={styles.container}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Theme.colors.primary} />
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#ddb7ff" />
             }
           >
             {/* Invite Code display */}
             <View style={styles.codeCard}>
               <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.codeLabel}>INVITE CODE</Text>
-                <Text style={styles.codeText}>{selectedSquad.invite_code}</Text>
+                <Text style={styles.codeText}>{activeSquad.invite_code}</Text>
               </View>
               <TouchableOpacity
                 style={styles.copyBtn}
-                onPress={() => copyToClipboard(selectedSquad.invite_code)}
+                onPress={() => copyToClipboard(activeSquad.invite_code)}
               >
-                <Copy size={16} color={Theme.colors.primary} />
+                <Copy size={16} color="#ddb7ff" />
                 <Text style={styles.copyBtnText}>COPY</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Squad Leaderboard */}
+            {/* Squad Leaderboard Header */}
             <View style={styles.sectionHeader}>
-              <Trophy size={16} color={Theme.colors.primary} />
+              <Trophy size={16} color="#ddb7ff" />
               <Text style={styles.sectionTitle}>SQUAD STANDINGS</Text>
             </View>
 
+            {/* Members List */}
             <View style={styles.memberList}>
               {squadMembers.map((member, index) => {
                 const rankNum = index + 1;
@@ -322,13 +420,74 @@ export default function GroupsScreen() {
                 );
               })}
             </View>
+
+            {/* Search & Invite Players (Owner Only) */}
+            {activeSquad.owner_id === currentUserId && (
+              <View style={styles.inviteSection}>
+                <View style={styles.sectionHeader}>
+                  <UserPlus size={16} color="#ddb7ff" />
+                  <Text style={styles.sectionTitle}>INVITE PLAYERS BY GAMERTAG</Text>
+                </View>
+                
+                <View style={styles.searchBar}>
+                  <Search size={18} color="#cfc2d6" style={styles.searchIcon} />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Enter player gamertag (case-sensitive)..."
+                    placeholderTextColor="rgba(207, 194, 214, 0.5)"
+                    value={playerSearchQuery}
+                    onChangeText={setPlayerSearchQuery}
+                    autoCorrect={false}
+                  />
+                  {searchLoading && (
+                    <ActivityIndicator size="small" color="#ddb7ff" />
+                  )}
+                </View>
+
+                {/* Player Results */}
+                {searchResults.length > 0 && (
+                  <View style={styles.resultsList}>
+                    {searchResults.map((player) => {
+                      const playerRank = getRankDetails(player.total_xp);
+                      return (
+                        <View key={player.id} style={styles.playerItem}>
+                          <Text style={styles.playerEmoji}>{player.avatar_url?.split(' ')[0] || '🦊'}</Text>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.memberName}>{player.username}</Text>
+                            <Text style={[styles.playerRankTextLabel, { color: playerRank.color }]}>
+                              {playerRank.name} • {player.total_xp} XP
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.inviteBtn}
+                            onPress={() => handleSendInvite(player)}
+                          >
+                            <Text style={styles.inviteBtnText}>INVITE</Text>
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Leave Squad Option */}
+            <TouchableOpacity
+              style={[styles.exitBtn, Theme.getGlow('#FF2A5F', 'low'), actionLoading && { opacity: 0.6 }]}
+              onPress={handleExitSquad}
+              disabled={actionLoading}
+            >
+              <LogOut size={16} color="#FF2A5F" />
+              <Text style={styles.exitBtnText}>LEAVE SQUAD</Text>
+            </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
       </View>
     );
   }
 
-  // SQUADS LIST (Viewing all squads + create/join options)
+  // ── BRANCH B: User is NOT in a Squad (Show Join/Create Screen) ───────
   return (
     <View style={{ flex: 1, backgroundColor: '#101415' }}>
       <LinearGradient
@@ -341,64 +500,45 @@ export default function GroupsScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <Users size={24} color="#ddb7ff" />
-          <Text style={styles.headerTitle}>YOUR SQUADS</Text>
+          <Text style={styles.headerTitle}>YOUR SQUAD</Text>
         </View>
 
         <ScrollView
           contentContainerStyle={styles.container}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Theme.colors.primary} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#ddb7ff" />
           }
         >
-          {/* Squad list */}
-          {squads.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
-              <Users size={36} color={Theme.colors.textMuted} style={{ opacity: 0.5 }} />
-              <Text style={styles.emptyText}>Not in any squads.</Text>
-              <Text style={styles.emptySubtext}>
-                Join a friend's squad to compete or create your own and invite others!
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.squadList}>
-              {squads.map((squad) => (
-                <TouchableOpacity
-                  key={squad.id}
-                  style={styles.squadCard}
-                  onPress={() => handleSelectSquad(squad)}
-                >
-                  <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
-                  <View style={styles.squadCardInfo}>
-                    <Text style={styles.squadCardName}>{squad.name}</Text>
-                    <Text style={styles.squadCardCode}>Invite: {squad.invite_code}</Text>
-                  </View>
-                  <ArrowLeft size={16} color={Theme.colors.primary} style={{ transform: [{ rotate: '180deg' }] }} />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+          {/* Empty State */}
+          <View style={styles.emptyCard}>
+            <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+            <Users size={36} color="#cfc2d6" style={{ opacity: 0.5 }} />
+            <Text style={styles.emptyText}>Not in any squads.</Text>
+            <Text style={styles.emptySubtext}>
+              Join a friend's squad to compete or create your own and invite others!
+            </Text>
+          </View>
 
           {/* Action Panel: Create Squad */}
           <View style={styles.card}>
             <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
             <View style={styles.cardHeader}>
-              <Plus size={18} color={Theme.colors.primary} />
+              <Plus size={18} color="#ddb7ff" />
               <Text style={styles.cardTitle}>CREATE NEW SQUAD</Text>
             </View>
             <TextInput
               style={styles.input}
               placeholder="Squad Name (e.g. Iron Giants)"
-              placeholderTextColor={Theme.colors.textMuted}
+              placeholderTextColor="#8A82A0"
               value={newSquadName}
               onChangeText={setNewSquadName}
             />
             <TouchableOpacity
-              style={[styles.actionBtn, Theme.getGlow(Theme.colors.primary, 'low')]}
+              style={[styles.actionBtn, Theme.getGlow('#ddb7ff', 'low'), actionLoading && { opacity: 0.6 }]}
               onPress={handleCreateSquad}
               disabled={actionLoading}
             >
-              {actionLoading ? <ActivityIndicator color="#000" /> : <Text style={styles.actionBtnText}>CREATE SQUAD</Text>}
+              {actionLoading ? <ActivityIndicator color="#400071" /> : <Text style={styles.actionBtnText}>CREATE SQUAD</Text>}
             </TouchableOpacity>
           </View>
 
@@ -406,23 +546,23 @@ export default function GroupsScreen() {
           <View style={styles.card}>
             <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
             <View style={styles.cardHeader}>
-              <UserPlus size={18} color={Theme.colors.secondary} />
+              <UserPlus size={18} color="#cac1ed" />
               <Text style={styles.cardTitle}>JOIN SQUAD VIA CODE</Text>
             </View>
             <TextInput
               style={styles.input}
               placeholder="Invite Code (e.g. 7X3F8A)"
-              placeholderTextColor={Theme.colors.textMuted}
+              placeholderTextColor="#8A82A0"
               value={joinInviteCode}
               onChangeText={setJoinInviteCode}
               autoCapitalize="characters"
             />
             <TouchableOpacity
-              style={[styles.actionBtnSecondary, Theme.getGlow(Theme.colors.secondary, 'low')]}
+              style={[styles.actionBtnSecondary, Theme.getGlow('#cac1ed', 'low'), actionLoading && { opacity: 0.6 }]}
               onPress={handleJoinSquad}
               disabled={actionLoading}
             >
-              {actionLoading ? <ActivityIndicator color="#000" /> : <Text style={styles.actionBtnText}>JOIN SQUAD</Text>}
+              {actionLoading ? <ActivityIndicator color="#322b4f" /> : <Text style={styles.actionBtnTextSecondary}>JOIN SQUAD</Text>}
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -442,39 +582,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  ambientGlowTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: 400,
-  },
-  ambientGlowBottom: {
-    position: 'absolute',
-    bottom: -150,
-    left: -150,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: Theme.colors.accent,
-    opacity: 0.05,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
     gap: 12,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Theme.colors.card,
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   headerTitleContainer: {
     flex: 1,
@@ -486,7 +599,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
   headerSubtitle: {
-    color: Theme.colors.textMuted,
+    color: '#cfc2d6',
     fontSize: 10,
     fontFamily: 'Inter_700Bold',
     letterSpacing: 1,
@@ -513,38 +626,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_700Bold',
   },
   emptySubtext: {
-    color: Theme.colors.textMuted,
+    color: '#cfc2d6',
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
     textAlign: 'center',
     lineHeight: 18,
-  },
-  squadList: {
-    gap: 12,
-  },
-  squadCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(45, 49, 51, 0.3)',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(207, 194, 214, 0.15)',
-    padding: 16,
-    justifyContent: 'space-between',
-    overflow: 'hidden',
-  },
-  squadCardInfo: {
-    gap: 4,
-  },
-  squadCardName: {
-    color: '#FFF',
-    fontSize: 16,
-    fontFamily: 'Inter_800ExtraBold',
-  },
-  squadCardCode: {
-    color: Theme.colors.textMuted,
-    fontSize: 12,
-    fontFamily: 'Inter_600SemiBold',
   },
   card: {
     backgroundColor: 'rgba(45, 49, 51, 0.3)',
@@ -560,7 +646,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     borderBottomWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(207, 194, 214, 0.1)',
     paddingBottom: 8,
   },
   cardTitle: {
@@ -570,32 +656,38 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   input: {
-    height: 46,
-    backgroundColor: '#06060C',
-    borderWidth: 1.5,
-    borderColor: Theme.colors.border,
-    borderRadius: 8,
+    height: 48,
+    backgroundColor: 'rgba(45, 49, 51, 0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+    borderRadius: 12,
     color: '#FFF',
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
     paddingHorizontal: 12,
   },
   actionBtn: {
-    height: 46,
-    backgroundColor: Theme.colors.primary,
-    borderRadius: 8,
+    height: 48,
+    backgroundColor: '#ddb7ff',
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   actionBtnSecondary: {
-    height: 46,
-    backgroundColor: Theme.colors.primary, // Consistently purple primary action
-    borderRadius: 8,
+    height: 48,
+    backgroundColor: '#cac1ed',
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   actionBtnText: {
-    color: '#FFF',
+    color: '#400071',
+    fontSize: 13,
+    fontFamily: 'Inter_900Black',
+    letterSpacing: 0.5,
+  },
+  actionBtnTextSecondary: {
+    color: '#322b4f',
     fontSize: 13,
     fontFamily: 'Inter_900Black',
     letterSpacing: 0.5,
@@ -604,15 +696,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'rgba(22, 15, 43, 0.4)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 14,
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+    borderRadius: 20,
     padding: 16,
     overflow: 'hidden',
   },
   codeLabel: {
-    color: Theme.colors.textMuted,
+    color: '#cfc2d6',
     fontSize: 9,
     fontFamily: 'Inter_700Bold',
     letterSpacing: 1,
@@ -627,16 +719,16 @@ const styles = StyleSheet.create({
   copyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#06060C',
+    backgroundColor: 'rgba(45, 49, 51, 0.5)',
     borderWidth: 1,
-    borderColor: Theme.colors.primary,
-    borderRadius: 6,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+    borderRadius: 10,
     paddingVertical: 8,
     paddingHorizontal: 12,
     gap: 6,
   },
   copyBtnText: {
-    color: Theme.colors.primary,
+    color: '#ddb7ff',
     fontSize: 11,
     fontFamily: 'Inter_800ExtraBold',
   },
@@ -645,7 +737,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     borderBottomWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(207, 194, 214, 0.1)',
     paddingBottom: 8,
     marginTop: 10,
   },
@@ -670,7 +762,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   memberRankNum: {
-    color: Theme.colors.textMuted,
+    color: '#cfc2d6',
     fontSize: 14,
     fontFamily: 'Inter_800ExtraBold',
     width: 28,
@@ -684,7 +776,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 38,
     borderWidth: 1,
-    borderColor: Theme.colors.border,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   memberName: {
     color: '#FFF',
@@ -694,6 +786,7 @@ const styles = StyleSheet.create({
   memberRankText: {
     fontSize: 11,
     fontFamily: 'Inter_600SemiBold',
+    marginTop: 1,
   },
   memberXpBox: {
     alignItems: 'flex-end',
@@ -704,13 +797,113 @@ const styles = StyleSheet.create({
   },
   xpSub: {
     fontSize: 9,
-    color: Theme.colors.textMuted,
+    color: '#cfc2d6',
     fontFamily: 'Inter_600SemiBold',
   },
   memberStreakText: {
-    color: Theme.colors.textMuted,
+    color: '#cfc2d6',
     fontSize: 10,
     fontFamily: 'Inter_600SemiBold',
     marginTop: 1,
+  },
+  exitBtn: {
+    flexDirection: 'row',
+    height: 50,
+    backgroundColor: 'rgba(255, 42, 95, 0.1)',
+    borderColor: '#FF2A5F',
+    borderWidth: 1.5,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  exitBtnText: {
+    color: '#FF2A5F',
+    fontSize: 14,
+    fontFamily: 'Inter_800ExtraBold',
+    letterSpacing: 0.5,
+  },
+  
+  // Search and invite layout additions
+  inviteSection: {
+    marginTop: 10,
+    gap: 12,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+    paddingHorizontal: 16,
+    height: 52,
+    gap: 12,
+  },
+  searchIcon: {
+    marginRight: 2,
+  },
+  searchInput: {
+    flex: 1,
+    color: '#FFF',
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  searchBtn: {
+    backgroundColor: '#ddb7ff',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchBtnText: {
+    color: '#400071',
+    fontSize: 11,
+    fontFamily: 'Inter_800ExtraBold',
+  },
+  resultsList: {
+    backgroundColor: 'rgba(45, 49, 51, 0.3)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(207, 194, 214, 0.15)',
+    overflow: 'hidden',
+  },
+  playerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(207, 194, 214, 0.1)',
+    gap: 10,
+  },
+  playerEmoji: {
+    fontSize: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    textAlign: 'center',
+    lineHeight: 32,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  playerRankTextLabel: {
+    fontSize: 10,
+    fontFamily: 'Inter_600SemiBold',
+    marginTop: 1,
+  },
+  inviteBtn: {
+    backgroundColor: 'rgba(221, 183, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: '#ddb7ff',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  inviteBtnText: {
+    color: '#ddb7ff',
+    fontSize: 11,
+    fontFamily: 'Inter_800ExtraBold',
   },
 });

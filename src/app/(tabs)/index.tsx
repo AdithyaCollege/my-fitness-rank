@@ -391,16 +391,15 @@ export default function DashboardScreen() {
 
           {/* Log New Workout Button */}
           <TouchableOpacity
-            style={styles.logWorkoutBtn}
+            style={[styles.logWorkoutBtn, Theme.getGlow('#ddb7ff', 'medium')]}
             activeOpacity={0.7}
             onPress={() => router.push('/log-workout')}
           >
-            <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
             <View style={styles.logWorkoutLeft}>
-              <Dumbbell size={18} color="#ddb7ff" />
+              <Dumbbell size={18} color="#400071" strokeWidth={2.5} />
               <Text style={styles.logWorkoutText}>LOG NEW WORKOUT</Text>
             </View>
-            <ChevronRight size={18} color="#ddb7ff" />
+            <ChevronRight size={18} color="#400071" strokeWidth={2.5} />
           </TouchableOpacity>
 
           {/* Daily Summary Section Header */}
@@ -784,9 +783,7 @@ const styles = StyleSheet.create({
   logWorkoutBtn: {
     height: 56,
     borderRadius: 28,
-    borderWidth: 1,
-    borderColor: 'rgba(207, 194, 214, 0.15)',
-    overflow: 'hidden',
+    backgroundColor: '#ddb7ff',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -798,10 +795,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   logWorkoutText: {
-    color: '#ddb7ff',
-    fontSize: 12,
+    color: '#400071',
+    fontSize: 13,
     fontFamily: 'Inter_800ExtraBold',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   sectionHeader: {
     flexDirection: 'row',
