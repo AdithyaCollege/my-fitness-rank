@@ -12,6 +12,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { supabase } from '@/lib/supabase';
 import { Theme } from '@/theme/theme';
+import { Button3D } from '@/components/ui/button-3d';
 import { Dumbbell, ShieldCheck } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -123,25 +124,13 @@ export default function LoginScreen() {
           <View style={styles.actionContainer}>
             {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
 
-            <TouchableOpacity
-              style={[
-                styles.loginButton,
-                loading && styles.buttonDisabled,
-                Theme.getGlow(Theme.colors.primary, 'medium'),
-              ]}
+            <Button3D
+              title="SIGN IN WITH GOOGLE"
               onPress={handleGoogleLogin}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <View style={styles.buttonInner}>
-                  <Text style={styles.googleIconText}>G</Text>
-                  <Text style={styles.loginButtonText}>SIGN IN WITH GOOGLE</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+              loading={loading}
+              leftIcon={<Text style={styles.googleIconText}>G</Text>}
+              style={Theme.getGlow(Theme.colors.primary, 'medium')}
+            />
             
             <Text style={styles.termsText}>
               By signing in, you agree to our Terms and Conditions.

@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Theme, getRankDetails } from '@/theme/theme';
+import { Button3D } from '@/components/ui/button-3d';
 import { Users, Plus, UserPlus, Copy, Trophy, LogOut, Search } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -473,14 +474,16 @@ export default function GroupsScreen() {
             )}
 
             {/* Leave Squad Option */}
-            <TouchableOpacity
-              style={[styles.exitBtn, Theme.getGlow('#FF2A5F', 'low'), actionLoading && { opacity: 0.6 }]}
+            <Button3D
+              title="LEAVE SQUAD"
               onPress={handleExitSquad}
-              disabled={actionLoading}
-            >
-              <LogOut size={16} color="#FF2A5F" />
-              <Text style={styles.exitBtnText}>LEAVE SQUAD</Text>
-            </TouchableOpacity>
+              loading={actionLoading}
+              backgroundColor="#FF2A5F"
+              shadowColor="#93000a"
+              textColor="#FFF"
+              leftIcon={<LogOut size={16} color="#FFF" />}
+              style={[Theme.getGlow('#FF2A5F', 'low'), { marginTop: 12 }]}
+            />
           </ScrollView>
         </SafeAreaView>
       </View>
@@ -533,13 +536,12 @@ export default function GroupsScreen() {
               value={newSquadName}
               onChangeText={setNewSquadName}
             />
-            <TouchableOpacity
-              style={[styles.actionBtn, Theme.getGlow('#ddb7ff', 'low'), actionLoading && { opacity: 0.6 }]}
+            <Button3D
+              title="CREATE SQUAD"
               onPress={handleCreateSquad}
-              disabled={actionLoading}
-            >
-              {actionLoading ? <ActivityIndicator color="#400071" /> : <Text style={styles.actionBtnText}>CREATE SQUAD</Text>}
-            </TouchableOpacity>
+              loading={actionLoading}
+              style={Theme.getGlow('#ddb7ff', 'low')}
+            />
           </View>
 
           {/* Action Panel: Join Squad */}
@@ -557,13 +559,15 @@ export default function GroupsScreen() {
               onChangeText={setJoinInviteCode}
               autoCapitalize="characters"
             />
-            <TouchableOpacity
-              style={[styles.actionBtnSecondary, Theme.getGlow('#cac1ed', 'low'), actionLoading && { opacity: 0.6 }]}
+            <Button3D
+              title="JOIN SQUAD"
               onPress={handleJoinSquad}
-              disabled={actionLoading}
-            >
-              {actionLoading ? <ActivityIndicator color="#322b4f" /> : <Text style={styles.actionBtnTextSecondary}>JOIN SQUAD</Text>}
-            </TouchableOpacity>
+              loading={actionLoading}
+              backgroundColor="#cac1ed"
+              shadowColor="#9c82d9"
+              textColor="#322b4f"
+              style={Theme.getGlow('#cac1ed', 'low')}
+            />
           </View>
         </ScrollView>
       </SafeAreaView>

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { Theme } from '@/theme/theme';
+import { Button3D } from '@/components/ui/button-3d';
 import { useRouter } from 'expo-router';
 import { Check, X, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -658,27 +659,19 @@ export default function OnboardingScreen() {
           )}
 
           {step < TOTAL_STEPS ? (
-            <TouchableOpacity
-              style={[styles.nextButton, Theme.getGlow(Theme.colors.primary, 'low')]}
+            <Button3D
+              title="NEXT"
               onPress={handleNext}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.nextButtonText}>NEXT</Text>
-              <ChevronRight size={18} color="#000" />
-            </TouchableOpacity>
+              rightIcon={<ChevronRight size={18} color="#400071" />}
+              style={[{ flex: 1, marginLeft: 16 }, Theme.getGlow(Theme.colors.primary, 'low')]}
+            />
           ) : (
-            <TouchableOpacity
-              style={[styles.nextButton, Theme.getGlow(Theme.colors.primary, 'medium')]}
+            <Button3D
+              title="FINISH"
               onPress={handleFinish}
-              disabled={saving}
-              activeOpacity={0.7}
-            >
-              {saving ? (
-                <ActivityIndicator color="#000" />
-              ) : (
-                <Text style={styles.nextButtonText}>FINISH</Text>
-              )}
-            </TouchableOpacity>
+              loading={saving}
+              style={[{ flex: 1, marginLeft: 16 }, Theme.getGlow(Theme.colors.primary, 'medium')]}
+            />
           )}
         </View>
       </ScrollView>

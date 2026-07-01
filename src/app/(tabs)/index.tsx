@@ -9,12 +9,14 @@ import {
   RefreshControl,
   Alert,
   Platform,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Theme, getRankDetails, RankTier } from '@/theme/theme';
+import { Button3D } from '@/components/ui/button-3d';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Flame, Dumbbell, Trophy, ChevronRight, Zap, Award, Bell, Rocket, Check } from 'lucide-react-native';
+import { Flame, Dumbbell, Trophy, ChevronRight, Zap, Award, Bell, Rocket, Check, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
@@ -28,6 +30,11 @@ export default function DashboardScreen() {
   const [workedOutDays, setWorkedOutDays] = useState<number[]>([]);
   const [showAnimation, setShowAnimation] = useState(false);
   const [lastWorkoutCount, setLastWorkoutCount] = useState<number | null>(null);
+
+  // Full history modal states
+  const [historyModalVisible, setHistoryModalVisible] = useState(false);
+  const [fullHistory, setFullHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const loadData = async () => {
     try {
@@ -44,13 +51,19 @@ export default function DashboardScreen() {
       if (profileError) throw profileError;
       setProfile(profileData);
 
-      // Get recent workouts
+      // Get recent workouts logged TODAY only
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const endOfToday = new Date();
+      endOfToday.setHours(23, 59, 59, 999);
+
       const { data: workoutData, error: workoutError } = await supabase
         .from('workouts')
         .select('*')
         .eq('user_id', user.id)
-        .order('logged_at', { ascending: false })
-        .limit(3);
+        .gte('logged_at', startOfToday.toISOString())
+        .lte('logged_at', endOfToday.toISOString())
+        .order('logged_at', { ascending: false });
       
       if (workoutError) throw workoutError;
       setRecentWorkouts(workoutData || []);
@@ -85,6 +98,27 @@ export default function DashboardScreen() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const loadFullHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('workouts')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('logged_at', { ascending: false });
+
+      if (error) throw error;
+      setFullHistory(data || []);
+    } catch (err) {
+      console.error('Error loading full workout history:', err);
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -390,22 +424,21 @@ export default function DashboardScreen() {
           </BlurView>
 
           {/* Log New Workout Button */}
-          <TouchableOpacity
-            style={[styles.logWorkoutBtn, Theme.getGlow('#ddb7ff', 'medium')]}
-            activeOpacity={0.7}
+          <Button3D
+            title="LOG NEW WORKOUT"
             onPress={() => router.push('/log-workout')}
-          >
-            <View style={styles.logWorkoutLeft}>
-              <Dumbbell size={18} color="#400071" strokeWidth={2.5} />
-              <Text style={styles.logWorkoutText}>LOG NEW WORKOUT</Text>
-            </View>
-            <ChevronRight size={18} color="#400071" strokeWidth={2.5} />
-          </TouchableOpacity>
+            leftIcon={<Dumbbell size={18} color="#400071" strokeWidth={2.5} />}
+            rightIcon={<ChevronRight size={18} color="#400071" strokeWidth={2.5} />}
+            style={Theme.getGlow('#ddb7ff', 'medium')}
+          />
 
           {/* Daily Summary Section Header */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Daily Summary</Text>
-            <TouchableOpacity onPress={() => router.push('/profile')}>
+            <TouchableOpacity onPress={() => {
+              setHistoryModalVisible(true);
+              loadFullHistory();
+            }}>
               <Text style={styles.viewAllText}>View all</Text>
             </TouchableOpacity>
           </View>
@@ -424,14 +457,13 @@ export default function DashboardScreen() {
               <Text style={styles.fullEmptySubtext}>
                 You haven't logged any workouts yet. Tap below to record your first workout, earn 50 XP, and unlock your rank!
               </Text>
-              <TouchableOpacity
-                style={[styles.fullEmptyLogButton, Theme.getGlow('#ddb7ff', 'medium')]}
+              <Button3D
+                title="LOG YOUR FIRST WORKOUT"
                 onPress={() => router.push('/log-workout')}
-              >
-                <Dumbbell size={18} color="#400071" strokeWidth={2.5} />
-                <Text style={styles.fullEmptyLogButtonText}>LOG YOUR FIRST WORKOUT</Text>
-                <ChevronRight size={16} color="#400071" strokeWidth={2.5} />
-              </TouchableOpacity>
+                leftIcon={<Dumbbell size={18} color="#400071" strokeWidth={2.5} />}
+                rightIcon={<ChevronRight size={16} color="#400071" strokeWidth={2.5} />}
+                style={Theme.getGlow('#ddb7ff', 'medium')}
+              />
             </View>
           ) : (
             <View style={styles.workoutListContainer}>
@@ -498,6 +530,98 @@ export default function DashboardScreen() {
           )}
         </ScrollView>
       </SafeAreaView>
+
+      {/* Workout History Overlay Modal */}
+      <Modal
+        visible={historyModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setHistoryModalVisible(false)}
+      >
+        <View style={styles.historyOverlay}>
+          <TouchableOpacity
+            style={styles.historyBackdrop}
+            activeOpacity={1}
+            onPress={() => setHistoryModalVisible(false)}
+          />
+          <View style={styles.historyContent}>
+            <View style={styles.modalGrabber} />
+            <View style={styles.modalHeader}>
+              <Text style={styles.historyModalTitle}>WORKOUT LOG HISTORY</Text>
+              <TouchableOpacity
+                style={styles.modalCloseBtn}
+                onPress={() => setHistoryModalVisible(false)}
+              >
+                <X size={20} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+
+            {historyLoading ? (
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" color="#ddb7ff" />
+              </View>
+            ) : fullHistory.length === 0 ? (
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10 }}>
+                <Dumbbell size={36} color="#cfc2d6" style={{ opacity: 0.5 }} />
+                <Text style={{ color: '#cfc2d6', fontFamily: 'Inter_700Bold', fontSize: 15 }}>No workouts logged yet.</Text>
+              </View>
+            ) : (
+              <ScrollView contentContainerStyle={{ paddingBottom: 30 }} showsVerticalScrollIndicator={false}>
+                {fullHistory.map((workout, index) => {
+                  let iconBg = '#1d1238';
+                  let iconColor = '#c084fc';
+                  let badgeBg = '#2a1b4e';
+                  let badgeText = '#c084fc';
+                  let tag = 'Strength';
+                  if (workout.type.toLowerCase().includes('run') || workout.type.toLowerCase().includes('cardio') || workout.type.toLowerCase().includes('cycl')) {
+                    iconBg = '#1c2e36';
+                    iconColor = '#38bdf8';
+                    badgeBg = '#1b2c34';
+                    badgeText = '#38bdf8';
+                    tag = 'Cardio';
+                  } else if (workout.intensity === 'Light') {
+                    iconBg = '#162e24';
+                    iconColor = '#34d399';
+                    badgeBg = '#132c21';
+                    badgeText = '#34d399';
+                    tag = 'Light';
+                  }
+                  return (
+                    <BlurView
+                      key={workout.id || index}
+                      intensity={25}
+                      tint="dark"
+                      style={[styles.summaryCard, { marginBottom: 12 }]}
+                    >
+                      <View style={[styles.summaryIconBox, { backgroundColor: iconBg }]}>
+                        <Dumbbell size={20} color={iconColor} />
+                      </View>
+
+                      <View style={styles.summaryContent}>
+                        <Text style={styles.summaryTitle} numberOfLines={1}>
+                          {workout.exercise_name || workout.type}
+                        </Text>
+                        <Text style={styles.summarySubtitle} numberOfLines={1}>
+                          {workout.notes || 'Workout recorded successfully.'}
+                        </Text>
+                      </View>
+
+                      <View style={styles.summaryRight}>
+                        <View style={[styles.summaryBadge, { backgroundColor: badgeBg }]}>
+                          <Text style={[styles.summaryBadgeText, { color: badgeText }]}>{tag}</Text>
+                        </View>
+                        <Text style={styles.summaryTime}>
+                          {new Date(workout.logged_at).toLocaleDateString()}
+                        </Text>
+                      </View>
+                    </BlurView>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -929,5 +1053,54 @@ const styles = StyleSheet.create({
     borderColor: '#10B981',
     borderWidth: 2,
     backgroundColor: 'rgba(16, 185, 129, 0.15)',
+  },
+  historyOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'flex-end',
+  },
+  historyBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  historyContent: {
+    backgroundColor: '#101415',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    height: '80%',
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  modalGrabber: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  historyModalTitle: {
+    color: '#FFF',
+    fontSize: 16,
+    fontFamily: 'Inter_900Black',
+    letterSpacing: 1.5,
+  },
+  modalCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

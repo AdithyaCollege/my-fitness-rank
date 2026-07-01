@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Theme, getRankDetails } from '@/theme/theme';
+import { Button3D } from '@/components/ui/button-3d';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -587,14 +588,12 @@ export default function ProfileScreen() {
 
       {/* ─── Section 6: Edit Profile Button ─── */}
       <View style={styles.editProfileWrapper}>
-        <TouchableOpacity
-          style={[styles.editProfileBtn, Theme.getGlow('#ddb7ff', 'low')]}
+        <Button3D
+          title="EDIT PHYSICAL STATS"
           onPress={openEditModal}
-          activeOpacity={0.7}
-        >
-          <Pencil size={16} color="#400071" strokeWidth={2.5} />
-          <Text style={styles.editProfileBtnText}>EDIT PHYSICAL STATS</Text>
-        </TouchableOpacity>
+          leftIcon={<Pencil size={16} color="#400071" strokeWidth={2.5} />}
+          style={Theme.getGlow('#ddb7ff', 'low')}
+        />
       </View>
 
       {/* ─── Section 7: Other Settings Menu List ─── */}

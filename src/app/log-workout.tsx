@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Theme, getRankDetails } from '@/theme/theme';
+import { Button3D } from '@/components/ui/button-3d';
 import { useRouter } from 'expo-router';
 import { X, Plus, Trash2, Search, Flame, Award, Clock } from 'lucide-react-native';
 import { Image } from 'expo-image';
@@ -629,17 +630,12 @@ export default function LogWorkoutScreen() {
                     </View>
 
                     {/* Save Button */}
-                    <TouchableOpacity
-                      style={[styles.saveButton, Theme.getGlow('#ddb7ff', 'medium'), saving && { opacity: 0.6 }]}
+                    <Button3D
+                      title="SAVE & SUBMIT TO SQUAD"
                       onPress={handleSaveWorkout}
-                      disabled={saving}
-                    >
-                      {saving ? (
-                        <ActivityIndicator color="#400071" />
-                      ) : (
-                        <Text style={styles.saveButtonText}>SAVE & SUBMIT TO SQUAD</Text>
-                      )}
-                    </TouchableOpacity>
+                      loading={saving}
+                      style={Theme.getGlow('#ddb7ff', 'medium')}
+                    />
                   </ScrollView>
                 )}
               </View>
