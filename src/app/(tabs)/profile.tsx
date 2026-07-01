@@ -41,6 +41,10 @@ import {
   Shield,
   ChevronRight,
   ArrowUpRight,
+  Heart,
+  BarChart2,
+  Smartphone,
+  Settings,
 } from 'lucide-react-native';
 
 // ── Emoji Maps ──────────────────────────────────────────────────────────
@@ -594,6 +598,77 @@ export default function ProfileScreen() {
           leftIcon={<Pencil size={16} color="#400071" strokeWidth={2.5} />}
           style={Theme.getGlow('#ddb7ff', 'low')}
         />
+      </View>
+
+      {/* ─── Section 6.5: Health & Tracking Menu List ─── */}
+      <Text style={styles.menuGroupTitle}>HEALTH & GOALS</Text>
+      <View style={styles.menuGroupCard}>
+        <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+        
+        {/* Personal Details */}
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          activeOpacity={0.7}
+          onPress={openEditModal}
+        >
+          <View style={styles.menuItemLeft}>
+            <User size={20} color="#cfc2d6" />
+            <Text style={styles.menuItemText}>Personal Details</Text>
+          </View>
+          <ChevronRight size={18} color="#cfc2d6" />
+        </TouchableOpacity>
+
+        {/* Health & Goals */}
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          activeOpacity={0.7}
+          onPress={() => router.push('/health-goals')}
+        >
+          <View style={styles.menuItemLeft}>
+            <Heart size={20} color="#ddb7ff" />
+            <Text style={[styles.menuItemText, { color: '#ddb7ff', fontFamily: 'Inter_700Bold' }]}>Health & Goals ⭐</Text>
+          </View>
+          <ChevronRight size={18} color="#ddb7ff" />
+        </TouchableOpacity>
+
+        {/* Weight History */}
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          activeOpacity={0.7}
+          onPress={() => router.push('/weight-history')}
+        >
+          <View style={styles.menuItemLeft}>
+            <BarChart2 size={20} color="#cfc2d6" />
+            <Text style={styles.menuItemText}>Weight History</Text>
+          </View>
+          <ChevronRight size={18} color="#cfc2d6" />
+        </TouchableOpacity>
+
+        {/* Connected Devices */}
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          activeOpacity={0.7}
+          onPress={() => Alert.alert('Connected Devices', 'Connected Devices sync module coming soon!')}
+        >
+          <View style={styles.menuItemLeft}>
+            <Smartphone size={20} color="#cfc2d6" />
+            <Text style={styles.menuItemText}>Connected Devices</Text>
+          </View>
+          <ChevronRight size={18} color="#cfc2d6" />
+        </TouchableOpacity>
+
+        {/* Settings */}
+        <TouchableOpacity 
+          style={[styles.menuItem, { borderBottomWidth: 0 }]} 
+          activeOpacity={0.7}
+          onPress={openEditModal}
+        >
+          <View style={styles.menuItemLeft}>
+            <Settings size={20} color="#cfc2d6" />
+            <Text style={styles.menuItemText}>Settings</Text>
+          </View>
+          <ChevronRight size={18} color="#cfc2d6" />
+        </TouchableOpacity>
       </View>
 
       {/* ─── Section 7: Other Settings Menu List ─── */}

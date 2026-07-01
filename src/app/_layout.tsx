@@ -205,6 +205,18 @@ export default function RootLayout() {
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen 
+          name="health-goals" 
+          options={{ 
+            headerShown: false,
+          }} 
+        />
+        <Stack.Screen 
+          name="weight-history" 
+          options={{ 
+            headerShown: false,
+          }} 
+        />
+        <Stack.Screen 
           name="log-workout" 
           options={{ 
             headerShown: false,

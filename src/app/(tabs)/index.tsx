@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Theme, getRankDetails, RankTier } from '@/theme/theme';
 import { Button3D } from '@/components/ui/button-3d';
+import { SideMenu } from '@/components/ui/side-menu';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Flame, Dumbbell, Trophy, ChevronRight, Zap, Award, Bell, Rocket, Check, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,6 +25,7 @@ import { Image } from 'expo-image';
 export default function DashboardScreen() {
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
+  const [userEmail, setUserEmail] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [recentWorkouts, setRecentWorkouts] = useState<any[]>([]);
@@ -36,12 +38,16 @@ export default function DashboardScreen() {
   const [fullHistory, setFullHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // Side Menu State
+  const [sideMenuVisible, setSideMenuVisible] = useState(false);
+
   const loadData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       // Get profile
+      setUserEmail(user.email || '');
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -271,9 +277,15 @@ export default function DashboardScreen() {
         {/* Top AppBar */}
         <View style={styles.topAppBar}>
           <View style={styles.userInfo}>
-            <View style={styles.avatarWrapper}>
-              {renderAvatar()}
-            </View>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setSideMenuVisible(true)}
+              style={styles.avatarTouchTarget}
+            >
+              <View style={styles.avatarWrapper}>
+                {renderAvatar()}
+              </View>
+            </TouchableOpacity>
             <Text style={styles.gamertagText}>{profile?.username || 'Gemini place Gamer Tag'}</Text>
           </View>
           <TouchableOpacity
@@ -622,6 +634,22 @@ export default function DashboardScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Slide Navigation Menu Drawer */}
+      <SideMenu
+        visible={sideMenuVisible}
+        onClose={() => setSideMenuVisible(false)}
+        activeItem="Home"
+        profile={profile}
+        userEmail={userEmail}
+        onLogout={async () => {
+          try {
+            await supabase.auth.signOut();
+          } catch (err) {
+            console.error('Error signing out:', err);
+          }
+        }}
+      />
     </View>
   );
 }
@@ -652,6 +680,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  avatarTouchTarget: {
+    minWidth: 48,
+    minHeight: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   avatarWrapper: {
     width: 44,
